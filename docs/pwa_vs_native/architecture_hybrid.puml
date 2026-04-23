@@ -1,0 +1,504 @@
+' =========================================================
+' ハイブリッドアプリ(Ionic + Capacitor)アーキテクチャ
+' =========================================================
+' レイヤー構造は Android 公式「推奨アーキテクチャ」準拠
+'   https://developer.android.com/topic/architecture?hl=ja
+'   UI Layer / Domain Layer(Optional) / Data Layer
+'   単方向データフロー(UDF)+ Single Source of Truth(SSOT)
+'   Data Layer から Capacitor Bridge を介して Native Plugin 経由で SDK に到達
+' =========================================================
+' 収録ダイアグラム:
+'   1. hybrid_layer_structure       レイヤ構造(UI / Domain / Data + Bridge)
+'   2. hybrid_udf                   単方向データフロー(UDF)
+'   3. hybrid_request_flow          リクエストフロー(カメラアクセス)
+'   4. hybrid_plugin_architecture   Capacitor Plugin アーキテクチャ
+'   5. hybrid_ht_scanner            HT バーコードスキャナ連携
+'   6. hybrid_update_distribution   更新・配信フロー(Live Update 含む)
+'   7. hybrid_hw_capability         HW 機能対応
+'   8. hybrid_build_pipeline        ビルドパイプライン
+' =========================================================
+
+@startuml 1_hybrid_layer_structure
+
+title 【① ハイブリッド(Ionic + Capacitor)】 レイヤ構造\n(Android 推奨アーキテクチャ準拠、Bridge でネイティブへ到達)
+
+skinparam defaultFontName "Meiryo"
+skinparam shadowing false
+skinparam package {
+  BackgroundColor<<ui>> #FFE0B2
+  BackgroundColor<<domain>> #FFCCBC
+  BackgroundColor<<data>> #D7CCC8
+  BackgroundColor<<bridge>> #FFCC80
+  BackgroundColor<<platform>> #BCAAA4
+  BackgroundColor<<external>> #ECEFF1
+  BorderColor #E65100
+}
+skinparam component {
+  BackgroundColor White
+  BorderColor #666
+}
+skinparam database {
+  BackgroundColor #FFFDE7
+  BorderColor #666
+}
+skinparam cloud {
+  BackgroundColor #ECEFF1
+  BorderColor #666
+}
+
+package "UI Layer (WebView 内、TS)" as UI <<ui>> {
+  component "UI Elements\n- Ionic UI コンポーネント\n  (Ion-Button / Ion-Card / Ion-Nav)\n- Angular / React / Vue Component" as UI_ELEMENTS
+  component "State Holders\n- Angular Service + RxJS\n- React Context / Zustand\n- Vue Pinia" as UI_STATE
+  UI_ELEMENTS -down-> UI_STATE : observes state\nsends events
+}
+
+package "Domain Layer (Optional、TS)" as DOMAIN <<domain>> {
+  component "UseCases / Interactors\n- 純 TS、プラットフォーム非依存\n- 例: `GetBarcodeHistoryUseCase`\n- 複雑な業務ロジックを切り出し" as USECASE
+}
+
+package "Data Layer (TS、Bridge を介してネイティブへ)" as DATA <<data>> {
+  component "Repositories\n- SSOT 提供\n- `BarcodeRepository` 等\n- 複数 DataSource の統合" as REPO
+
+  package "Data Sources" as DS {
+    component "Remote DataSource\n(fetch / axios)" as DS_REMOTE
+    component "WebView Local DataSource\n(IndexedDB / LocalStorage)" as DS_LOCAL_WEB
+    component "Native-backed DataSources\n(下記 Bridge 経由)" as DS_NATIVE
+  }
+
+  REPO -down-> DS_REMOTE
+  REPO -down-> DS_LOCAL_WEB
+  REPO -down-> DS_NATIVE
+}
+
+package "Capacitor Bridge (JS ↔ Native、非同期 IPC)" as BRIDGE <<bridge>> {
+  component "JS 側 Bridge\n(window.Capacitor)\nPromise API" as BR_JS
+  component "Native 側 Bridge\n(BridgeWebViewClient)" as BR_NATIVE
+  BR_JS -right-> BR_NATIVE : JSON メッセージ
+}
+
+package "Plugin 層 (Kotlin / Swift)" as PLUGINS <<platform>> {
+  component "公式 Plugin\n@capacitor/camera\n@capacitor/geolocation\n@capacitor/filesystem\n@capacitor/push-notifications" as PL_OFF
+  component "Community / Capawesome\n@capacitor-community/sqlite\n@capacitor-community/bluetooth-le\n@capawesome-team/capacitor-nfc" as PL_COMM
+  component "カスタム Plugin\n(社内独自実装\nDataWedge Intent BroadcastReceiver 等)" as PL_CUSTOM
+}
+
+package "Platform Runtime" as PLATFORM <<platform>> {
+  component "MainActivity(Kotlin/Java)" as MAIN
+  component "WebView (Android System WebView / WKWebView iOS)" as WV
+}
+
+package "External" as EXT <<external>> {
+  cloud "API Server\n/ Play / MDM / Appflow OTA" as API
+  database "SQLite (Plugin)\nEncrypted Prefs\nAndroid Keystore" as DB
+  component "Android / iOS SDK\n(CameraX / BT / NFC / USB /\nWorkManager / Keystore 等)" as SDK
+}
+
+UI_STATE -down-> USECASE : calls
+USECASE -down-> REPO : uses
+UI_ELEMENTS .down.> WV : 実行
+
+DS_REMOTE -down-> API : HTTPS(WebView fetch)
+DS_LOCAL_WEB -down-> WV
+DS_NATIVE -down-> BR_JS
+BR_NATIVE -down-> PL_OFF
+BR_NATIVE -down-> PL_COMM
+BR_NATIVE -down-> PL_CUSTOM
+PL_OFF -down-> SDK
+PL_COMM -down-> SDK
+PL_CUSTOM -down-> SDK
+SDK -down-> DB
+
+MAIN -right-> WV : 起動 + index.html ロード
+
+note right of DATA
+  **Data Layer の Data Source 層で**
+  **Web API 由来 / Native 由来の両方**を扱う。
+  Web-only の Repository は
+  PWA とほぼ同じ実装で可
+end note
+
+note right of BRIDGE
+  **Capacitor Bridge**
+  - Promise ベース非同期 IPC
+  - 型定義は @capacitor/core
+  - Web と Native の境界
+  - 同期呼出は不可
+end note
+
+note right of PL_CUSTOM
+  **HT 案件の DataWedge Intent 受信**
+  はこの Plugin 層で実装
+  Kotlin の BroadcastReceiver を登録し
+  notifyListeners() で WebView へ伝達
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 2_hybrid_udf
+
+title 【②】 単方向データフロー(UDF)+ SSOT\n(WebView ↔ Bridge ↔ Native SDK)
+
+skinparam defaultFontName "Meiryo"
+
+actor User
+
+package "UI Layer (TS)" as UI {
+  component "Ionic Component" as COMP
+  component "State Holder\n(Pinia / Context / RxJS)" as SH
+}
+
+package "Domain Layer" as DOMAIN {
+  component "UseCase(TS)" as UC
+}
+
+package "Data Layer (TS)" as DATA {
+  component "Repository" as REPO
+}
+
+package "Bridge" as BRIDGE {
+  component "Capacitor Bridge" as BR
+}
+
+package "Native Plugin (Kotlin)" as PL {
+  component "Plugin" as PLUGIN
+  database "SQLite / SDK API" as SDK
+  cloud "Remote API" as API
+}
+
+User --> COMP : 操作
+COMP --> SH : emit event
+SH --> UC : invoke
+UC --> REPO : fetch / update
+REPO --> BR : Capacitor.call()
+BR --> PLUGIN : JSON IPC
+PLUGIN --> SDK : Room / HW API
+PLUGIN --> API : HTTP (一部 Plugin で)
+SDK -[#green]-> PLUGIN : Flow / callback
+PLUGIN -[#green]-> BR : Promise resolve / event
+BR -[#green]-> REPO : Promise / Listener
+REPO -[#green]-> UC : Observable
+UC -[#green]-> SH
+SH -[#green]-> COMP : 再レンダリング
+
+note right of SDK
+  **SSOT**
+  SQLite(Plugin 経由で Native 管理)を
+  信頼点に。Android 側 Room の
+  オフラインファースト設計と同じ
+end note
+
+note left of BR
+  非同期 IPC なので
+  高頻度呼出(10ms 刻み等)は不向き
+end note
+
+legend right
+  | 方向 | 意味 |
+  |<color:black>━━━▶</color>| Event(User → 下方) |
+  |<color:green>━━━▶</color>| State / Result |
+endlegend
+
+@enduml
+
+' =========================================================
+
+@startuml 3_hybrid_request_flow
+
+title 【③ ハイブリッド】 カメラアクセス リクエストフロー
+
+skinparam defaultFontName "Meiryo"
+
+actor User
+participant "ネイティブ App\n(MainActivity)" as Native
+participant "WebView" as WV
+participant "App Logic\n(TS)" as App
+participant "Capacitor Bridge\n(JS 側)" as BridgeJS
+participant "Capacitor Bridge\n(Kotlin 側)" as BridgeNative
+participant "@capacitor/camera\n(Plugin, Kotlin)" as Plugin
+participant "Android SDK\nCameraX" as Camera
+participant "OS 権限" as OS
+
+User -> Native: APK 起動
+Native -> WV: index.html ロード
+WV -> App: ページレンダリング
+User -> App: 撮影ボタン押下
+App -> BridgeJS: Camera.getPhoto({ source: CAMERA })
+BridgeJS -> BridgeNative: JSON IPC\n{ "pluginId":"Camera", "methodName":"getPhoto" }
+BridgeNative -> Plugin: メソッド呼出
+Plugin -> OS: 権限確認 (ActivityResultContracts)
+OS -> User: Android 権限ダイアログ
+User -> OS: 許可
+OS --> Plugin: 許可
+Plugin -> Camera: ImageCapture
+Camera --> Plugin: ImageProxy
+Plugin -> Plugin: Base64 / ファイルパス生成
+Plugin --> BridgeNative: 結果オブジェクト
+BridgeNative --> BridgeJS: JSON で返却
+BridgeJS --> App: Promise resolve
+App -> WV: 画像表示
+
+note right of BridgeNative
+  Bridge は **非同期 IPC**
+  同期呼出はなく、
+  全て Promise で返る
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 4_hybrid_plugin_architecture
+
+title 【④ ハイブリッド】 Capacitor Plugin アーキテクチャ
+
+skinparam defaultFontName "Meiryo"
+
+package "JS/TS 側(WebView 内)" as JS_SIDE {
+  [Plugin API\n(definitions.ts)] as JS_API
+  [TypeScript 型定義] as JS_TYPES
+  [registerPlugin\n<\"PluginName\">] as JS_REGISTER
+}
+
+package "Native 側(Android Kotlin)" as ANDROID_SIDE {
+  [CapacitorPlugin\nアノテーション] as AND_ANNOT
+  [Plugin Class\n(extends Plugin)] as AND_CLASS
+  [@PluginMethod\n関数] as AND_METHOD
+  [Android SDK API] as AND_SDK
+}
+
+package "Native 側(iOS Swift)" as IOS_SIDE {
+  [CAP_PLUGIN マクロ] as IOS_MACRO
+  [Plugin Class\n(: CAPPlugin)] as IOS_CLASS
+  [@objc func] as IOS_METHOD
+  [iOS SDK API] as IOS_SDK
+}
+
+JS_REGISTER --> AND_CLASS : Android 実行時\nroute
+JS_REGISTER --> IOS_CLASS : iOS 実行時\nroute
+JS_API --> JS_REGISTER
+AND_CLASS --> AND_METHOD
+AND_METHOD --> AND_SDK
+IOS_CLASS --> IOS_METHOD
+IOS_METHOD --> IOS_SDK
+
+note bottom of JS_SIDE
+  Web 開発者向けの
+  フラットな Promise API
+end note
+
+note bottom of ANDROID_SIDE
+  Kotlin で
+  ネイティブ SDK を直接叩く
+  (例: CameraX、WorkManager)
+end note
+
+note bottom of IOS_SIDE
+  Swift で
+  iOS SDK を直接叩く
+  (例: AVFoundation、CoreBluetooth)
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 5_hybrid_ht_scanner
+
+title 【⑤ ハイブリッド】 HT バーコードスキャナ連携(Capacitor Plugin 経由)
+
+skinparam defaultFontName "Meiryo"
+
+participant "Zebra HT\nスキャナ HW" as HW
+participant "DataWedge\nService" as DW
+participant "Android Broadcast" as BC
+participant "カスタム Plugin\n(Kotlin BroadcastReceiver)" as RECEIVER
+participant "Capacitor Bridge" as BRIDGE
+participant "WebView /\nApp(TS)" as APP
+actor User
+
+== Intent Output モード(カスタム Plugin で対応可能)==
+note over RECEIVER #FFF3E0
+  Capacitor 公式 Plugin ではないため
+  **社内でカスタム Plugin を作成する**のが一般
+  または Darryn Campbell 氏のサンプル活用
+end note
+
+HW -> DW: トリガーキー → スキャン
+DW -> BC: Intent 発行\n(com.symbol.datawedge.api.RESULT_ACTION)
+BC -> RECEIVER: onReceive(intent)
+RECEIVER -> RECEIVER: getStringExtra("com.symbol.datawedge.data_string")
+RECEIVER -> BRIDGE: notifyListeners("barcodeScanned", data)
+BRIDGE -> APP: Capacitor イベント発火
+APP -> User: 画面反映
+
+== Keyboard Wedge モード(実装不要) ==
+HW -> DW: スキャン
+DW -> DW: キー入力として OS へ送出
+DW -> APP: <input> にフォーカスがあればそのまま文字列が届く
+APP -> User: 画面反映(最短)
+
+note right of RECEIVER
+  カスタム Plugin で
+  実装する Kotlin コード例:
+  ----
+  @CapacitorPlugin(name = "DataWedge")
+  class DataWedgePlugin : Plugin() {
+    override fun load() {
+      val filter = IntentFilter("com.symbol...")
+      context.registerReceiver(receiver, filter)
+    }
+    private val receiver = object : BroadcastReceiver() {
+      override fun onReceive(ctx, intent) {
+        val data = intent.getStringExtra(...)
+        notifyListeners("scan", JSObject().put("data", data))
+      }
+    }
+  }
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 6_hybrid_update_distribution
+
+title 【⑥ ハイブリッド】 更新・配信フロー(ネイティブ + Live Update)
+
+skinparam defaultFontName "Meiryo"
+
+actor 開発者 as Dev
+participant "Git / CI/CD" as CI
+participant "Google Play Console /\nMDM / Ionic Appflow" as PLAY
+participant "Web アセット CDN\n(Appflow / 自前)" as CDN
+participant "端末内 Capacitor\nLive Update Plugin" as LU
+actor ユーザ as User
+
+== ネイティブ変更あり(プラグイン追加等)==
+Dev -> CI: git push (ネイティブコード含む)
+CI -> CI: flutter build apk\nor npx cap build android
+CI -> CI: AAB 署名
+CI -> PLAY: アップロード
+note right of PLAY
+  ストア審査(Play)
+  または MDM 配信
+  通常 **数時間〜数日**
+end note
+PLAY --> User: インストール通知
+
+== Web 資産変更のみ(Live Update)==
+Dev -> CI: git push (Web 部分のみ)
+CI -> CI: ionic build / npm run build
+CI -> CDN: Web アセット配信
+note right of CDN #E8F5E9
+  **OTA 即反映**
+  ストア審査不要
+  ロールバックも即可能
+end note
+CDN --> LU: 新アセット取得(起動時 or 定期)
+LU -> User: 次回起動時に反映
+
+note bottom
+  Live Update は Ionic Enterprise / Appflow か
+  自前実装(@capgo/capacitor-updater 等)で提供
+  **Apple/Google ストア規約では「バグ修正・軽微変更」に限定**
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 7_hybrid_hw_capability
+
+title 【⑦ ハイブリッド】 HW 機能対応
+
+skinparam defaultFontName "Meiryo"
+skinparam classBorderColor #E65100
+
+class "ハイブリッド(Capacitor)\nの HW アクセス" as HYB <<table>> {
+  カメラ               : ◎ @capacitor/camera
+  位置情報             : ◎ @capacitor/geolocation
+  センサー             : ◎ @capacitor-community/device-motion
+  生体認証             : ◎ @aparajita/capacitor-biometric-auth
+  --
+  BT Classic           : ◎ Plugin
+  BLE                  : ◎ @capacitor-community/bluetooth-le
+  NFC                  : ◎ @capawesome-team/capacitor-nfc
+  USB                  : ◎ カスタム Plugin
+  赤外線               : ○ カスタム Plugin(ConsumerIrManager ラップ)
+  シリアル(RS-232C)    : ○ カスタム Plugin(USB Serial ラップ)
+  UWB                  : △ カスタム Plugin
+  Zigbee/Thread/Matter : ○ カスタム Plugin
+  UHF RFID             : △ ベンダ SDK を Plugin 化
+  --
+  DataWedge Wedge      : ◎ <input> 受信
+  DataWedge Intent     : ○ カスタム Plugin
+  プリンタ(BT/USB)    : ◎ ベンダ SDK を Plugin 化
+  プリンタ(ネット)    : ◎ HTTP
+  物理キー             : △ WebView 境界で取りこぼし
+  --
+  HW Keystore          : ◎ Secure Storage Plugin
+  長時間 BG 常駐       : △ @capacitor/background-task(制約)
+  MDM App Config 注入  : ◎ @capawesome-team/capacitor-managed-configurations
+  Device Owner 連携    : ○ カスタム Plugin
+  Live Update (OTA)    : ◎ Appflow / @capgo/capacitor-updater
+}
+
+note right of HYB
+  ◎=公式/安定 Plugin / ○=実装可能だが要カスタム or 品質ばらつき
+  △=制約あり / ×=原理的に不可
+  **純 PWA で × の多くが、カスタム Plugin で ○ に昇格**
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 8_hybrid_build_pipeline
+
+title 【⑧ ハイブリッド】 ビルドパイプライン
+
+skinparam defaultFontName "Meiryo"
+
+start
+:Web アプリコード\n(Angular / React / Vue);
+:ionic build / vite build;
+:Web アセット\n(dist/ or www/);
+
+fork
+  :npx cap sync android;
+  :android/ フォルダ(Gradle プロジェクト);
+  :Gradle build;
+  :署名付き AAB / APK;
+fork again
+  :npx cap sync ios;
+  :ios/ フォルダ(Xcode プロジェクト);
+  :xcodebuild;
+  :IPA;
+fork again
+  :そのまま ionic build;
+  :PWA として配信可能\n(同一 Web アセット);
+end fork
+
+:配信;
+
+partition "Android" {
+  :Play Console\nMDM\nAPK 直配布;
+}
+partition "iOS" {
+  :App Store\nMDM(DEP);
+}
+partition "PWA" {
+  :HTTPS Server\n(A2HS);
+}
+
+stop
+
+note right
+  **同一 Web アセット**を
+  Android / iOS / PWA / Desktop(Electron)に
+  並列展開できるのが Capacitor の強み
+end note
+
+@enduml

@@ -475,7 +475,10 @@ Android 専用前提では、クロスプラットフォームの最大価値「
 ### PWA vs ネイティブ比較(`pwa_vs_native/`)
 
 - [PWA vs ネイティブアプリ 選定観点 詳細](./pwa_vs_native/pwa_vs_native_criteria.md) — 15 カテゴリ 118 項目(配布/更新/性能/**HW 機能 22 項目**(赤外線・シリアル・UWB・Zigbee等含む)/オフライン/BG/セキュリティ/UX/開発/MDM/ポリシー/ビジネス/規制/地域/ハイブリッド)。PWA 不可の足切り 22 項目と決定フロー、典型シナリオ別推奨、本件適用結果。
-- [PWA vs ネイティブ アーキテクチャ比較(PlantUML)](./pwa_vs_native/architecture_comparison.puml) — 6 種類の図を収録: レイヤ構造(deployment)、カメラアクセスフロー(sequence)、HT スキャナ連携、選定決定フロー(activity)、HW アクセス対応マトリクス、更新・配信フロー。
+- PWA vs ネイティブ アーキテクチャ図(PlantUML、3 ファイル構成、Android 推奨アーキテクチャ準拠):
+  - [architecture_pwa.puml](./pwa_vs_native/architecture_pwa.puml) — PWA(UI / Domain / Data + Web API + Service Worker)
+  - [architecture_hybrid.puml](./pwa_vs_native/architecture_hybrid.puml) — ハイブリッド(UI / Domain / Data + Capacitor Bridge + Native Plugin)
+  - [architecture_native.puml](./pwa_vs_native/architecture_native.puml) — ネイティブ(UI / Domain / Data + Jetpack コンポーネント構成)
 
 ---
 

@@ -1,0 +1,441 @@
+' =========================================================
+' PWA(Progressive Web App)アーキテクチャ
+' =========================================================
+' レイヤー構造は Android 公式「推奨アーキテクチャ」を Web 側に投影
+'   https://developer.android.com/topic/architecture?hl=ja
+'   UI Layer / Domain Layer(Optional) / Data Layer
+'   単方向データフロー(UDF)+ Single Source of Truth(SSOT)
+' =========================================================
+' 収録ダイアグラム:
+'   1. pwa_layer_structure        レイヤ構造(UI / Domain / Data)
+'   2. pwa_udf                    単方向データフロー(UDF)
+'   3. pwa_request_flow           リクエストフロー(カメラアクセス)
+'   4. pwa_service_worker         Service Worker ライフサイクル
+'   5. pwa_ht_scanner             HT バーコードスキャナ連携(Wedge のみ)
+'   6. pwa_update_distribution    更新・配信フロー
+'   7. pwa_hw_capability_matrix   HW 機能対応マトリクス
+'   8. pwa_constraints            PWA 足切り項目(できないこと)
+' =========================================================
+
+@startuml 1_pwa_layer_structure
+
+title 【① 純 PWA】 レイヤ構造\n(Android 推奨アーキテクチャを Web 側に投影)
+
+skinparam defaultFontName "Meiryo"
+skinparam shadowing false
+skinparam package {
+  BackgroundColor<<ui>> #BBDEFB
+  BackgroundColor<<domain>> #C5CAE9
+  BackgroundColor<<data>> #CFD8DC
+  BackgroundColor<<external>> #ECEFF1
+  BackgroundColor<<platform>> #FFECB3
+  BorderColor #1565C0
+}
+skinparam component {
+  BackgroundColor White
+  BorderColor #666
+}
+skinparam database {
+  BackgroundColor #FFFDE7
+  BorderColor #666
+}
+skinparam cloud {
+  BackgroundColor #ECEFF1
+  BorderColor #666
+}
+
+package "UI Layer" as UI <<ui>> {
+  component "UI Elements\n(HTML / CSS / JSX or Template)\n- React / Vue / Angular /\n  Vanilla Components" as UI_ELEMENTS
+  component "State Holders\n- React: useState / Context / Zustand\n- Vue: ref / Pinia\n- Angular: Service + RxJS" as UI_STATE
+  UI_ELEMENTS -down-> UI_STATE : observes state\nsends events
+}
+
+package "Domain Layer (Optional)" as DOMAIN <<domain>> {
+  component "UseCases / Interactors\n- Pure TS 関数 / class\n- 例: `getBarcodeHistory`\n- 複雑な業務ロジックを切り出し" as USECASE
+}
+
+package "Data Layer" as DATA <<data>> {
+  component "Repositories\n- 複数 DataSource の統合\n- SSOT を提供\n- `BarcodeRepository` 等" as REPO
+
+  package "Data Sources" as DS {
+    component "Remote DataSource\n(fetch API / axios)" as DS_REMOTE
+    component "Local DataSource\n(IndexedDB / idb-keyval)" as DS_LOCAL
+    component "Cache DataSource\n(Cache API via SW)" as DS_CACHE
+    component "Scanner DataSource\n(<input> キー入力監視)" as DS_SCANNER
+    component "Sensor DataSource\n(Web API ラッパ)" as DS_SENSOR
+  }
+
+  REPO -down-> DS_REMOTE
+  REPO -down-> DS_LOCAL
+  REPO -down-> DS_CACHE
+  REPO -down-> DS_SCANNER
+  REPO -down-> DS_SENSOR
+}
+
+package "Platform Runtime(ブラウザ / WebView)" as PLATFORM <<platform>> {
+  component "JS エンジン(V8 / JavaScriptCore)" as JS_ENGINE
+  component "レンダリングエンジン(Blink / WebKit)" as RENDER
+  component "Service Worker\n(常駐不可、短時間 BG のみ)" as SW
+  component "PWA Manifest\n(A2HS / 表示モード / アイコン)" as MANIFEST
+}
+
+package "External" as EXT <<external>> {
+  cloud "HTTPS Server\n(URL 配信 / Static Assets /\nAPI Endpoint)" as API
+  database "IndexedDB / LocalStorage /\nCache API / OPFS\n(ブラウザ管理、容量保証なし)" as DB
+
+  package "Web APIs(制限付 HW アクセス)" as WAPI {
+    component "標準:\ngetUserMedia / Geolocation /\nWebAuthn / Web Push /\nBarcode Detection / Web Share" as WAPI_STD
+    component "Chromium 限定\n(Safari 不可):\nWeb Bluetooth / Web NFC /\nWeb USB / Web Serial" as WAPI_CHROMIUM
+  }
+}
+
+UI_STATE -down-> USECASE : calls
+USECASE -down-> REPO : uses
+
+UI_ELEMENTS .down.> PLATFORM : 実行
+DS_REMOTE -down-> API : HTTPS
+DS_LOCAL -down-> DB
+DS_CACHE -down-> DB
+DS_SCANNER -down-> WAPI_STD : keydown
+DS_SENSOR -down-> WAPI_STD
+DS_SENSOR -down-> WAPI_CHROMIUM : (Android のみ)
+SW -down-> DB : オフラインキャッシュ
+SW -down-> API : BG Sync(制約多)
+
+note right of UI
+  **UI Layer**
+  React/Vue/Angular の宣言的 UI
+  State は Context / Pinia / RxJS 等で管理
+  Android 版と同じく UDF パターン適用可
+end note
+
+note right of DOMAIN
+  **Domain Layer**
+  純 TS でプラットフォーム非依存
+  Android/iOS の UseCase と
+  理論的には同一構造
+end note
+
+note right of DATA
+  **Data Layer**
+  Web の制約(Web API 範囲内)で
+  実装できる Data Source のみ
+  BT Classic / IR / シリアル / UWB 等は **不可**
+end note
+
+note bottom of WAPI
+  **Web API の制約が PWA の最大の壁**
+  この層で届かない HW 機能は
+  ハイブリッド化 or ネイティブ化で補完
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 2_pwa_udf
+
+title 【②】 単方向データフロー(UDF)+ SSOT
+
+skinparam defaultFontName "Meiryo"
+
+actor User
+
+package "UI Layer" as UI {
+  component "Component\n(React / Vue / Angular)" as COMP
+  component "State Holder\n(useState / Pinia / RxJS)" as SH
+}
+
+package "Domain Layer" as DOMAIN {
+  component "UseCase(TS 関数)" as UC
+}
+
+package "Data Layer" as DATA {
+  component "Repository" as REPO
+  database "IndexedDB\n(SSOT)" as IDB
+  cloud "Remote API" as API
+}
+
+User --> COMP : 操作(event)
+COMP --> SH : dispatch / emit
+SH --> UC : invoke
+UC --> REPO : fetch / update
+REPO --> IDB : 優先: Local を返す
+REPO --> API : バックグラウンド同期(fetch)
+API -[#blue]-> IDB : 非同期で書込
+IDB -[#green]-> REPO : 変更通知(Observable)
+REPO -[#green]-> UC : 値 or Observable
+UC -[#green]-> SH
+SH -[#green]-> COMP : 再レンダリング
+COMP -[#green]-> User
+
+note right of IDB
+  **SSOT**
+  IndexedDB を Local 信頼点として扱う
+  ただしブラウザがストレージ圧迫時に
+  **削除する可能性あり**(要注意)
+end note
+
+note left of SH
+  状態管理ライブラリ:
+  React: Zustand / Jotai / Recoil
+  Vue: Pinia
+  Angular: Service + RxJS BehaviorSubject
+end note
+
+legend right
+  | 方向 | 意味 |
+  |<color:black>━━━▶</color>| イベント(User → 下方) |
+  |<color:green>━━━▶</color>| State(Data → UI 方向) |
+  |<color:blue>━━━▶</color>| 非同期同期 |
+endlegend
+
+@enduml
+
+' =========================================================
+
+@startuml 3_pwa_request_flow
+
+title 【③ 純 PWA】 カメラアクセス リクエストフロー
+
+skinparam defaultFontName "Meiryo"
+
+actor User
+participant "ブラウザ" as Browser
+participant "App\n(HTML/JS)" as App
+participant "Web API\nnavigator.mediaDevices" as API
+participant "OS 権限ダイアログ" as OS
+participant "カメラ HW" as Camera
+
+User -> Browser: URL アクセス
+Browser -> App: ページロード(初回はネット、2回目以降 SW キャッシュ)
+User -> App: 撮影ボタン押下
+App -> API: getUserMedia({ video: true })
+API -> OS: 権限要求
+OS -> User: 「このサイトがカメラを使おうとしています」ダイアログ
+User -> OS: 許可
+OS --> API: 許可通知
+API -> Camera: ストリーム取得
+Camera --> API: MediaStream
+API --> App: MediaStream
+App -> App: <video> に stream 表示
+
+note over App
+  許可は **ドメイン単位** で記憶される
+  再訪時にダイアログ省略可
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 4_pwa_service_worker
+
+title 【④ 純 PWA】 Service Worker ライフサイクル
+
+skinparam defaultFontName "Meiryo"
+
+state "Parsed" as P
+state "Installing" as I
+state "Installed" as ID
+state "Activating" as AC
+state "Activated" as AD
+state "Idle" as IDLE
+state "Fetch Event" as FE
+state "Push Event" as PE
+state "Sync Event" as SE
+state "Redundant" as R
+
+[*] --> P : register()
+P --> I : install イベント
+I --> ID : caches.addAll()
+ID --> AC : skipWaiting()
+AC --> AD : activate イベント
+AD --> IDLE
+IDLE --> FE : fetch 横取り
+IDLE --> PE : Push 通知受信
+IDLE --> SE : Background Sync / Periodic Sync
+FE --> IDLE
+PE --> IDLE
+SE --> IDLE
+IDLE --> R : 新バージョンリリース
+AD --> R
+R --> [*]
+
+note right of FE
+  ネットワーク要求をキャッシュ
+  してオフライン動作を実現
+end note
+
+note right of PE
+  FCM / APNs 経由の Web Push
+  iOS Safari 16.4+ で対応
+end note
+
+note right of SE
+  Background Sync(Chromium)
+  Periodic Sync(Chromium、制約多)
+  **短時間実行のみ**
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 5_pwa_ht_scanner
+
+title 【⑤ 純 PWA】 HT バーコードスキャナ連携
+
+skinparam defaultFontName "Meiryo"
+
+participant "Zebra HT\nスキャナ HW" as HW
+participant "DataWedge\nService" as DW
+participant "OS IME" as IME
+participant "ブラウザ" as Browser
+participant "App\n<input>" as Input
+
+== Keyboard Wedge モード(動作可能) ==
+HW -> DW: スキャン(トリガーキー押下)
+DW -> IME: キー入力イベントとして送信
+IME -> Browser: keydown イベント
+Browser -> Input: フォーカス中の <input> に文字列入力
+Input -> Input: "change" / "input" イベント
+note right of Input
+  ◎ PWA でも動作可
+  `<input>` にフォーカスがあれば
+  自動で受信できる
+end note
+
+== Intent Output モード(動作不可) ==
+HW -> DW: スキャン
+DW -> DW: Broadcast Intent 発行\n(com.symbol.datawedge.api)
+note over DW, Browser #FFEBEE
+  **PWA は Android Broadcast Intent を**
+  **受信する API を持たない ⇒ 不可**
+  同じく Foreground Service / Notification Channel
+  への直接アクセスもできない
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 6_pwa_update_distribution
+
+title 【⑥ 純 PWA】 更新・配信フロー
+
+skinparam defaultFontName "Meiryo"
+
+actor 開発者 as Dev
+participant "Git / CI/CD" as CI
+participant "CDN / HTTPS Server" as Server
+participant "Service Worker\n(端末内)" as SW
+participant "ブラウザ" as Browser
+actor ユーザ as User
+
+Dev -> CI: git push
+CI -> CI: ビルド(Web bundle)
+CI -> Server: デプロイ(S3 / Netlify / Vercel 等)
+
+note over Server #E8F5E9
+  **サーバ更新 = 即時配信**
+  ストア審査不要、数十秒で反映可
+end note
+
+User -> Browser: URL アクセス(次回)
+Browser -> SW: Service Worker を確認
+SW -> Server: 新バージョンチェック
+Server --> SW: 新バージョン取得
+SW -> SW: Cache 更新
+SW -> Browser: 次のアクセスで新バージョン提供
+Browser -> User: 新画面を表示
+
+note right of SW
+  即時反映したい場合は
+  skipWaiting() で
+  アクティベート前倒し可
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 7_pwa_hw_capability
+
+title 【⑦ 純 PWA】 HW 機能対応
+
+skinparam defaultFontName "Meiryo"
+skinparam classBorderColor #1976D2
+
+class "PWA の HW アクセス" as PWA <<table>> {
+  カメラ・マイク       : ◎ getUserMedia
+  位置情報             : ◎ Geolocation
+  センサー(加速度等)   : ◎ DeviceMotion
+  生体認証             : ○ WebAuthn(パスキー)
+  Web Bluetooth(BLE)  : △ Chromium Android のみ
+  Web NFC              : △ Chromium、NDEF 限定
+  Web USB              : △ Chromium
+  Web Serial           : △ Chromium
+  --
+  BT Classic           : × 不可
+  NFC HCE              : × 不可
+  赤外線               : × 不可
+  シリアル(直)        : × 不可(Web Serial で間接可能)
+  UWB                  : × 不可
+  Zigbee/Thread/Matter : × 不可
+  UHF RFID             : × 不可
+  DataWedge Wedge      : ◎ キー入力として受信
+  DataWedge Intent     : × Broadcast Intent 受信不可
+  プリンタ(BT/USB)    : × 不可
+  プリンタ(ネット)    : ◎ HTTP 送信可
+  物理ファンクションキー : △ keydown のみ、取りこぼしあり
+  --
+  HW Keystore(TEE)    : × 不可
+  長時間 BG 常駐       : × 不可
+  MDM App Config 注入  : × 不可
+  Device Owner 連携    : × 不可
+}
+
+note right of PWA
+  凡例: ◎=完全対応 / ○=標準対応
+        / △=制約あり / ×=原理的に不可
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 8_pwa_constraints
+
+title 【⑧ 純 PWA】 採用時の足切り項目(できないこと)
+
+skinparam defaultFontName "Meiryo"
+
+rectangle "PWA で実現不可な要件\n(1つでも該当 → PWA 採用不可)" as RECT #FFEBEE {
+  card "IV3  BT Classic" as BT
+  card "IV6  NFC HCE" as NFC_HCE
+  card "IV9  DataWedge Intent API" as DW_INTENT
+  card "IV10 UHF RFID" as RFID
+  card "IV11 プリンタ(BT/USB)" as PRINTER
+  card "IV14 赤外線(IR Blaster)" as IR
+  card "IV15 シリアル(RS-232C 直)" as SERIAL
+  card "IV16 Wi-Fi Direct" as WIFI_DIRECT
+  card "IV18 UWB" as UWB
+  card "IV19 ANT+ / Zigbee / Thread / Matter" as IOT
+  card "IV20 オーディオジャック周辺機器" as AUDIO
+  card "IV23 MSR(磁気カード)" as MSR
+  card "VI3  Foreground Service(8h 常駐)" as FG
+  card "VII2 ハードウェアキーストア" as KS
+  card "VII4 証明書ピン留め" as PIN
+  card "VIII6 ホーム画面ウィジェット" as WIDGET
+  card "X2   MDM App Config 注入" as MDM
+  card "X4   Device Owner 連携" as DO
+}
+
+note bottom
+  iOS Safari で追加的に利用不可になる Web API:
+    Web Bluetooth、Web NFC、Web USB、Web Serial
+  ⇒ Android 単独運用でも、これらが必要なら PWA 不可
+end note
+
+@enduml

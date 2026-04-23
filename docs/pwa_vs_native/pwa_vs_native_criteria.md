@@ -441,18 +441,18 @@ Q1. 足切り観点(セクション 4)のうち、1 つでも該当するか?
 
 ---
 
-## 9. アーキテクチャ図(PlantUML)
+## 9. アーキテクチャ図(PlantUML、3 ファイル構成)
 
-本ディレクトリに [`architecture_comparison.puml`](./architecture_comparison.puml) を同梱。以下 6 ダイアグラムを収録:
+本ディレクトリに、アーキテクチャごとに 1 ファイルずつ同梱。
+**レイヤー構造は [Android 公式「推奨アーキテクチャ」](https://developer.android.com/topic/architecture?hl=ja)**(UI Layer / Domain Layer(Optional) / Data Layer、単方向データフロー UDF、Single Source of Truth)**に準拠**し、3 アーキテクチャとも同一の構造で記述することで対比を明示。
 
-1. **レイヤ構造比較** — 純 PWA / ハイブリッド / 純ネイティブの 3 アーキテクチャを deployment diagram で並列表示
-2. **カメラアクセス リクエストフロー** — 3 方式の呼出経路を sequence diagram で対比
-3. **HT バーコードスキャナ連携** — Keyboard Wedge vs Intent Output の扱い
-4. **選定決定フロー** — 足切り観点を組み込んだ activity diagram
-5. **ハードウェアアクセス対応マトリクス** — class 図表現で 20 項目の可否一覧
-6. **更新・配信フロー比較** — PWA(即反映)/ ハイブリッド(Live Update)/ ネイティブ(Play/MDM)の差異
+| ファイル | 主要ダイアグラム |
+|---|---|
+| [`architecture_pwa.puml`](./architecture_pwa.puml) | レイヤ構造 / UDF / カメラフロー / SW ライフサイクル / HT Wedge / 更新配信 / HW 対応 / 足切り項目 |
+| [`architecture_hybrid.puml`](./architecture_hybrid.puml) | レイヤ構造(Bridge 含む)/ UDF / カメラフロー / Capacitor Plugin 構造 / HT Intent 連携 / 更新配信(Live Update) / HW 対応 / ビルドパイプライン |
+| [`architecture_native.puml`](./architecture_native.puml) | レイヤ構造(UI/Domain/Data) / UDF / カメラフロー / HT Intent 直接受信 / HW 対応 / 更新配信(Play/MDM) / Jetpack スタック |
 
-レンダリング: PlantUML Web Server(https://www.plantuml.com/plantuml/)、IntelliJ PlantUML Plugin、VS Code PlantUML Extension いずれでも可。
+**レンダリング**: PlantUML Web Server(https://www.plantuml.com/plantuml/)、IntelliJ PlantUML Plugin、VS Code PlantUML Extension いずれでも可。
 
 ---
 

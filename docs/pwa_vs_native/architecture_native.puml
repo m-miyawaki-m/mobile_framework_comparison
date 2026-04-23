@@ -1,0 +1,441 @@
+' =========================================================
+' ネイティブアプリ(Kotlin + Jetpack Compose)アーキテクチャ
+' =========================================================
+' レイヤー構造は Android 公式「推奨アーキテクチャ」に準拠
+'   https://developer.android.com/topic/architecture?hl=ja
+'   UI Layer / Domain Layer(Optional) / Data Layer
+'   単方向データフロー(UDF)+ Single Source of Truth(SSOT)
+' =========================================================
+' 収録ダイアグラム:
+'   1. native_layer_structure       レイヤ構造(UI / Domain / Data)
+'   2. native_udf                   単方向データフロー(UDF)
+'   3. native_request_flow          リクエストフロー(カメラアクセス)
+'   4. native_ht_scanner            HT バーコードスキャナ連携
+'   5. native_hw_capability         HW 機能対応(全て ◎)
+'   6. native_update_distribution   更新・配信フロー
+'   7. native_jetpack_stack         Jetpack コンポーネント構成
+' =========================================================
+
+@startuml 1_native_layer_structure
+
+title 【① 純ネイティブ(Kotlin + Jetpack Compose)】\nレイヤ構造(Android 推奨アーキテクチャ準拠)
+
+skinparam defaultFontName "Meiryo"
+skinparam shadowing false
+skinparam package {
+  BackgroundColor<<ui>> #C8E6C9
+  BackgroundColor<<domain>> #DCEDC8
+  BackgroundColor<<data>> #E6EE9C
+  BackgroundColor<<external>> #ECEFF1
+  BorderColor #2E7D32
+}
+skinparam component {
+  BackgroundColor White
+  BorderColor #666
+}
+skinparam database {
+  BackgroundColor #FFFDE7
+  BorderColor #666
+}
+skinparam cloud {
+  BackgroundColor #ECEFF1
+  BorderColor #666
+}
+
+package "UI Layer" as UI <<ui>> {
+  component "UI Elements\n(Jetpack Compose Composables)\n- `@Composable` 関数\n- Material 3\n- Adaptive Layout" as UI_ELEMENTS
+  component "State Holders\n(ViewModel)\n- UI State(StateFlow)\n- イベントハンドラ\n- ビジネスロジックの呼出" as UI_STATE
+  UI_ELEMENTS -down-> UI_STATE : observes state\nsends events
+}
+
+package "Domain Layer (Optional)" as DOMAIN <<domain>> {
+  component "UseCases / Interactors\n- `GetBarcodeHistoryUseCase`\n- `SubmitTransactionUseCase`\n- 再利用可能な業務ロジック" as USECASE
+}
+
+package "Data Layer" as DATA <<data>> {
+  component "Repositories\n- `BarcodeRepository`\n- `TransactionRepository`\n- SSOT の統合窓口\n- 複数 DataSource の競合解決" as REPO
+
+  package "Data Sources" as DS {
+    component "Remote DataSource\n(Retrofit + OkHttp / Ktor)" as DS_REMOTE
+    component "Local DataSource\n(Room DAO)" as DS_LOCAL
+    component "Preferences DataSource\n(DataStore)" as DS_PREFS
+    component "Scanner DataSource\n(DataWedge BroadcastReceiver)" as DS_SCANNER
+    component "Sensor DataSource\n(CameraX / Bluetooth / NFC 等)" as DS_SENSOR
+  }
+
+  REPO -down-> DS_REMOTE
+  REPO -down-> DS_LOCAL
+  REPO -down-> DS_PREFS
+  REPO -down-> DS_SCANNER
+  REPO -down-> DS_SENSOR
+}
+
+package "External" as EXT <<external>> {
+  cloud "API Server\n(REST / gRPC / WebSocket)" as API
+  database "SQLite(Room)\nEncrypted Shared Prefs\nDataStore ファイル" as DB
+  component "Android SDK(OS)\nCameraX / BT / BLE / NFC / USB /\nIR / UART / UWB / RFID SDK /\nKeystore / Biometric / WorkManager" as SDK
+}
+
+UI_STATE -down-> USECASE : calls
+USECASE -down-> REPO : uses
+
+DS_REMOTE -down-> API : HTTPS
+DS_LOCAL -down-> DB
+DS_PREFS -down-> DB
+DS_SCANNER -down-> SDK : Intent Broadcast\nBroadcastReceiver
+DS_SENSOR -down-> SDK
+
+note right of UI
+  **UI Layer**
+  Composable 関数で宣言的に UI を記述
+  ViewModel が UI State を StateFlow で公開
+  UI Elements は State を観測して再レンダリング
+end note
+
+note right of DOMAIN
+  **Domain Layer(オプション)**
+  複雑な業務ロジックや
+  複数 ViewModel で再利用するロジックを切り出す
+  小規模なら省略可
+end note
+
+note right of DATA
+  **Data Layer**
+  Repository が SSOT として振る舞い
+  DataSource の詳細を上位から隠蔽
+  オフラインファーストなら Local DB を SSOT に
+end note
+
+note bottom of EXT
+  ネイティブ App は Android SDK の **全 API** に
+  直接アクセス可能。ブリッジ層・プラグイン層なし
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 2_native_udf
+
+title 【② ネイティブ】 単方向データフロー(UDF)+ SSOT
+
+skinparam defaultFontName "Meiryo"
+
+actor User
+
+package "UI Layer" as UI {
+  component "Composable\n(UI Elements)" as COMP
+  component "ViewModel\n(StateFlow<UiState>)" as VM
+}
+
+package "Domain Layer" as DOMAIN {
+  component "UseCase" as UC
+}
+
+package "Data Layer" as DATA {
+  component "Repository" as REPO
+  database "Local DB\n(SSOT)" as DB
+  cloud "Remote API" as API
+}
+
+User --> COMP : 操作(event)
+COMP --> VM : event 通知(onClick 等)
+VM --> UC : invoke()
+UC --> REPO : fetch / update
+REPO --> DB : 優先: Local を返す
+REPO --> API : バックグラウンドで同期
+API -[#blue]-> DB : 非同期で書込
+DB -[#green]-> REPO : Flow で変更通知
+REPO -[#green]-> UC : Flow
+UC -[#green]-> VM : Flow
+VM -[#green]-> COMP : StateFlow 変更通知
+COMP -[#green]-> User : 画面再描画
+
+note right of DB
+  **SSOT(Single Source of Truth)**
+  Local DB が唯一の信頼できる情報源
+  オフライン時も安定動作
+end note
+
+note left of VM
+  **StateFlow** で
+  UI State を immutable に公開
+  UI はこれを collect する
+end note
+
+legend right
+  | 方向 | 意味 |
+  |<color:black>━━━▶</color>| イベント(User → 下方) |
+  |<color:green>━━━▶</color>| State(Data → UI 方向) |
+  |<color:blue>━━━▶</color>| 非同期同期 |
+endlegend
+
+@enduml
+
+' =========================================================
+
+@startuml 3_native_request_flow
+
+title 【③ ネイティブ】 カメラアクセス リクエストフロー
+
+skinparam defaultFontName "Meiryo"
+
+actor User
+participant "Composable UI" as UI
+participant "ViewModel" as VM
+participant "UseCase\n(TakePhotoUseCase)" as UC
+participant "MediaRepository" as REPO
+participant "CameraX\n(DataSource)" as CX
+participant "OS 権限 System" as OS
+
+User -> UI: 撮影ボタン押下
+UI -> VM: onCapture()
+VM -> UC: invoke()
+UC -> REPO: capturePhoto()
+REPO -> CX: ImageCapture.takePicture()
+CX -> OS: 権限確認\n(ActivityResultContracts.\nRequestPermission)
+OS --> User: 権限ダイアログ
+User --> OS: 許可
+OS --> CX: GRANTED
+CX --> REPO: ImageProxy
+REPO -> REPO: Room に保存
+REPO --> UC: Uri
+UC --> VM: Result<Uri>
+VM --> UI: UiState.Success(uri)
+UI --> User: 画像表示
+
+note over CX
+  CameraX は
+  Jetpack ライブラリで
+  ライフサイクル対応済
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 4_native_ht_scanner
+
+title 【④ ネイティブ】 HT バーコードスキャナ連携(DataWedge Intent)
+
+skinparam defaultFontName "Meiryo"
+
+participant "Zebra HT\nスキャナ HW" as HW
+participant "DataWedge\nService" as DW
+participant "Android Broadcast\nSystem" as BC
+participant "BroadcastReceiver\n(Data Source)" as BR
+participant "BarcodeRepository" as REPO
+participant "ViewModel\n(StateFlow)" as VM
+participant "Composable UI" as UI
+actor User
+
+== Intent Output モード(ネイティブで直接受信) ==
+User -> HW: トリガーキー押下
+HW -> DW: 読取
+DW -> BC: sendBroadcast(Intent)\nACTION: "com.symbol.datawedge.api.RESULT_ACTION"
+BC -> BR: onReceive(intent)
+BR -> BR: intent.getStringExtra(\n"com.symbol.datawedge.data_string")
+BR -> REPO: emit(Barcode)
+REPO -> REPO: Room に保存\n/ 重複チェック
+REPO --> VM: Flow<List<Barcode>>
+VM --> UI: UiState 更新
+UI --> User: リスト表示
+
+== Keyboard Wedge モード(同じく直接受信) ==
+HW -> DW: 読取
+DW -> UI: キー入力イベント
+UI -> VM: TextField onValueChange
+VM -> REPO: addBarcode(string)
+REPO --> VM: 更新通知
+VM --> UI: 再描画
+
+note over BR, REPO
+  **ネイティブではプラグインや**
+  **ブリッジ経由が不要**
+  Android SDK の BroadcastReceiver を
+  そのまま使える
+end note
+
+note right of DW
+  Intent API で詳細制御可:
+  - プロファイル切替
+  - MultiBarcode 同時読取
+  - シンボル種別のメタ情報取得
+  - SOFT_SCAN_TRIGGER(画面ボタン起動)
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 5_native_hw_capability
+
+title 【⑤ ネイティブ】 HW 機能対応
+
+skinparam defaultFontName "Meiryo"
+skinparam classBorderColor #2E7D32
+
+class "ネイティブ(Kotlin + Jetpack)\nの HW アクセス" as NAT <<table>> {
+  カメラ               : ◎ CameraX
+  位置情報             : ◎ Fused Location
+  センサー             : ◎ SensorManager
+  生体認証             : ◎ Biometric API
+  --
+  BT Classic           : ◎ BluetoothSocket
+  BLE                  : ◎ BluetoothLeScanner
+  NFC                  : ◎ android.nfc
+  NFC HCE              : ◎ HostApduService
+  USB                  : ◎ UsbManager
+  赤外線               : ◎ ConsumerIrManager
+  シリアル(RS-232C)    : ◎ USB Serial / UART
+  UWB                  : ◎ Android 13+ API
+  Zigbee/Thread/Matter : ◎ ドングル + SDK
+  UHF RFID             : ◎ ベンダ SDK(Zebra RFID SDK 等)
+  --
+  DataWedge Wedge      : ◎
+  DataWedge Intent     : ◎ BroadcastReceiver
+  Zebra EMDK           : ◎ 低レベル制御
+  プリンタ(BT/USB)    : ◎ ベンダ SDK
+  プリンタ(ネット)    : ◎
+  物理ファンクションキー : ◎ KeyEvent
+  --
+  HW Keystore(TEE)    : ◎ Android Keystore
+  StrongBox            : ◎ Android 9+
+  長時間 BG 常駐       : ◎ Foreground Service
+  Foreground Service   : ◎ API 34+ type 宣言
+  MDM App Config 注入  : ◎ RestrictionsManager
+  Device Owner 連携    : ◎ DevicePolicyManager
+  Kiosk / Lock Task    : ◎ startLockTask()
+}
+
+note right of NAT
+  **OS の全 API に直接アクセス**
+  プラグイン層・ブリッジ層が存在しないため
+  機能制約は原理的にない
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 6_native_update_distribution
+
+title 【⑥ ネイティブ】 更新・配信フロー
+
+skinparam defaultFontName "Meiryo"
+
+actor 開発者 as Dev
+participant "Git / CI/CD\n(GitHub Actions\nor Bitrise)" as CI
+participant "署名キーストア" as KS
+participant "Google Play Console" as GP
+participant "MDM\n(SOTI / Intune /\nWorkspace ONE)" as MDM
+participant "Firebase App\nDistribution" as FAD
+actor ユーザ as User
+
+Dev -> CI: git push
+CI -> CI: gradle assembleRelease\n/ bundleRelease
+CI -> KS: 署名(.jks / .keystore)
+KS --> CI: 署名済 AAB / APK
+
+alt Play 公開
+  CI -> GP: AAB アップロード
+  GP -> GP: 内部テスト → Closed → Open → Staged Rollout
+  note right of GP
+    **Staged Rollout** で段階配信
+    - % 指定
+    - 問題時は停止可
+  end note
+  GP --> User: 更新通知(Play 経由)
+  User -> GP: ダウンロード + インストール
+
+else 社内 MDM 配信
+  CI -> MDM: APK 登録
+  MDM -> MDM: プロファイル / グループ割当
+  note right of MDM
+    **App Config** を同時配信:
+    - API エンドポイント
+    - 拠点別設定
+  end note
+  MDM --> User: プッシュ配信 / サイレントインストール
+
+else 開発テスト配信
+  CI -> FAD: APK / AAB
+  FAD --> User: メール通知
+end
+
+note bottom
+  **ネイティブには OTA 仕組みはない**
+  (AOT コンパイル済 DEX のため)
+  In-App Update API で強制更新促進のみ可
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 7_native_jetpack_stack
+
+title 【⑦ ネイティブ】 Jetpack コンポーネント構成
+
+skinparam defaultFontName "Meiryo"
+
+package "UI Layer" as UI #C8E6C9 {
+  component "Jetpack Compose\n(androidx.compose.*)" as COMPOSE
+  component "Navigation Compose\n(androidx.navigation)" as NAV
+  component "ViewModel\n(androidx.lifecycle)" as VM
+  component "StateFlow\n(kotlinx.coroutines)" as FLOW
+}
+
+package "Dependency Injection" as DI #F5F5F5 {
+  component "Hilt\n(dagger.hilt)" as HILT
+}
+
+package "Domain Layer" as DOMAIN #DCEDC8 {
+  component "UseCase" as UC
+}
+
+package "Data Layer" as DATA #E6EE9C {
+  component "Repository" as REPO
+  component "Room\n(androidx.room)" as ROOM
+  component "DataStore\n(androidx.datastore)" as DATASTORE
+  component "Retrofit / OkHttp / Ktor" as HTTP
+  component "WorkManager\n(androidx.work)" as WM
+  component "Paging 3\n(androidx.paging)" as PAGING
+}
+
+package "Cross-cutting" as CC #ECEFF1 {
+  component "Coroutines\n(kotlinx.coroutines)" as COROUTINES
+  component "Serialization\n(kotlinx.serialization)" as SER
+  component "Timber\n(log)" as LOG
+}
+
+package "Security" as SEC #FFCDD2 {
+  component "Jetpack Security\n(EncryptedSharedPrefs\nEncryptedFile)" as JSEC
+  component "Biometric" as BIO
+  component "Keystore / Play Integrity" as KEY
+}
+
+COMPOSE --> NAV
+COMPOSE --> VM
+VM --> FLOW
+VM --> UC
+UC --> REPO
+REPO --> ROOM
+REPO --> DATASTORE
+REPO --> HTTP
+REPO --> WM
+REPO --> PAGING
+
+HILT ..> VM : inject
+HILT ..> UC : inject
+HILT ..> REPO : inject
+
+COROUTINES ..> VM
+COROUTINES ..> REPO
+SER ..> HTTP
+
+REPO --> JSEC
+REPO --> KEY
+VM --> BIO
+
+@enduml
