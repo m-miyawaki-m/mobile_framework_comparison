@@ -441,12 +441,27 @@ Q1. 足切り観点(セクション 4)のうち、1 つでも該当するか?
 
 ---
 
-## 9. 関連ドキュメント
+## 9. アーキテクチャ図(PlantUML)
 
-- [`android_business_app_framework_comparison.md`](./android_business_app_framework_comparison.md) — 総合比較、第 5 章に本ドキュメントのサマリあり
-- [`framework_native_features.md`](./framework_native_features.md) — 各 FW のネイティブ機能プラグイン対応表
-- [`selection_criteria.md`](./selection_criteria.md) — 言語・FW 選定観点(A〜H)
-- [`profile_android_native.md`](./profile_android_native.md) / [`profile_flutter.md`](./profile_flutter.md) / [`profile_react_native.md`](./profile_react_native.md) / [`profile_ionic_capacitor.md`](./profile_ionic_capacitor.md) / [`profile_kmp.md`](./profile_kmp.md) — 各 FW 詳細プロファイル
+本ディレクトリに [`architecture_comparison.puml`](./architecture_comparison.puml) を同梱。以下 6 ダイアグラムを収録:
+
+1. **レイヤ構造比較** — 純 PWA / ハイブリッド / 純ネイティブの 3 アーキテクチャを deployment diagram で並列表示
+2. **カメラアクセス リクエストフロー** — 3 方式の呼出経路を sequence diagram で対比
+3. **HT バーコードスキャナ連携** — Keyboard Wedge vs Intent Output の扱い
+4. **選定決定フロー** — 足切り観点を組み込んだ activity diagram
+5. **ハードウェアアクセス対応マトリクス** — class 図表現で 20 項目の可否一覧
+6. **更新・配信フロー比較** — PWA(即反映)/ ハイブリッド(Live Update)/ ネイティブ(Play/MDM)の差異
+
+レンダリング: PlantUML Web Server(https://www.plantuml.com/plantuml/)、IntelliJ PlantUML Plugin、VS Code PlantUML Extension いずれでも可。
+
+---
+
+## 10. 関連ドキュメント
+
+- [主ドキュメント](../android_business_app_framework_comparison.md) — 総合比較、第 5 章に本ドキュメントのサマリあり
+- [framework_native_features](../framework_comparison/framework_native_features.md) — 各 FW のネイティブ機能プラグイン対応表
+- [selection_criteria](../framework_comparison/selection_criteria.md) — 言語・FW 選定観点(A〜H)
+- [profile_android_native](../framework_comparison/profile_android_native.md) / [profile_flutter](../framework_comparison/profile_flutter.md) / [profile_react_native](../framework_comparison/profile_react_native.md) / [profile_ionic_capacitor](../framework_comparison/profile_ionic_capacitor.md) / [profile_kmp](../framework_comparison/profile_kmp.md) — 各 FW 詳細プロファイル
 
 ---
 

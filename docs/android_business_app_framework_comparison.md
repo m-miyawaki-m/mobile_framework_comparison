@@ -460,16 +460,22 @@ Android 専用前提では、クロスプラットフォームの最大価値「
 
 ## 関連ドキュメント
 
-- [モバイルアプリ言語・フレームワーク 選定観点一覧](./selection_criteria.md) — 要件/チーム/言語特性/エコシステム/ビジネス/**保守・ガバナンス**/**開発環境**の 7 カテゴリから選定観点を整理。ライセンス・開発元・リリースサイクル・LTS・EOL・商用サポート・IDE・ビルド・Hot Reload・CI/CD 等を含む。
-- [フレームワーク/言語別 プロファイル集](./framework_profiles.md) — 言語 7 種・フレームワーク 13 種の個別ファクトシート(開発元・ライセンス・最新版・リリース頻度・LTS・EOL・推奨IDE・ビルド・テスト・CI/CD・業務適性・公式リンク)。比較表の一次データソース。
-- [詳細プロファイル: Android ネイティブ(Kotlin + Jetpack Compose)](./profile_android_native.md) — 本件第一推奨 FW の深掘り版。バージョン履歴・JDK/Gradle/SDK 要件・HT 連携(DataWedge/EMDK)・MDM(App Config/Device Owner)・12 週学習ロードマップ・コスト見積もり・落とし穴・拡充参照リンク。
-- [詳細プロファイル: Kotlin(言語)](./profile_kotlin.md) — 言語単体の詳細版。H 節(言語特性深掘り観点、18項目)を反映し、パフォーマンス・メモリ管理・エラーハンドリング・メタプログラミング・FFI・ツーリング品質・AI補完相性・学習曲線形状・業界採用実績・ロードマップ・日本語リソース等を収録。
-- [詳細プロファイル: Flutter](./profile_flutter.md) — FW 単体の詳細版。アーキテクチャ(Engine + Framework + Impeller)・Widget ツリー・Dart 特性・Hot Reload・Windows 開発環境・HT連携(Zebra 公式 DataWedge デモ)・MDM・オフライン(Drift/Isar)・ML Kit・主要採用事例・学習曲線・落とし穴・ロードマップ等を収録。
-- [詳細プロファイル: React Native + Expo](./profile_react_native.md) — 新アーキ(JSI/Fabric/TurboModules/Bridgeless)・Hermes・Expo SDK/EAS Build/Update・**Windows から iOS ビルド(Mac 不要)**・HT連携(Dev Client 必須)・React Navigation・状態管理(Zustand/TanStack Query)・OTA(EAS Update)・主要採用事例(Meta/MS/Shopify/Discord/Expo 新規)を収録。
-- [詳細プロファイル: Ionic + Capacitor](./profile_ionic_capacitor.md) — Ionic Framework(Stencil.js Web Components)+ Capacitor(ネイティブランタイム)+ Angular/React/Vue 組合せ。WebView 性能制約・HT Wedge モード・Capacitor プラグイン(公式/Community/Capawesome)・Ionic Appflow OTA・PWA 同時展開・社内業務アプリ最適・jQuery+Java チームに最適(Vue 併用で 2〜3 週立ち上げ)を収録。
-- [詳細プロファイル: Kotlin Multiplatform + Compose Multiplatform](./profile_kmp.md) — KMP Stable(2023-11)・Compose MP iOS Stable(2024-05)・expected/actual・Source Set 構成・Kotlin/Native・SKIE・主要ライブラリ(Ktor/SQLDelight/Koin)・iOS 連携・本件 Android 永続では不採用推奨の根拠。
-- [PWA vs ネイティブアプリ 選定観点 詳細](./pwa_vs_native_criteria.md) — 15 カテゴリ 118 項目(配布/更新/性能/**HW 機能 22 項目**(赤外線・シリアル・UWB・Zigbee等含む)/オフライン/BG/セキュリティ/UX/開発/MDM/ポリシー/ビジネス/規制/地域/ハイブリッド)。PWA 不可の足切り 22 項目と決定フロー、典型シナリオ別推奨、本件適用結果。
-- [言語の活用範囲 と ネイティブ機能アクセス・代表ライブラリ](./framework_native_features.md) — (1) 各言語で Android 以外に何が作れるか(Web/サーバ/デスクトップ/IoT等)、(2) カメラ・バーコード・NFC・BLE・GPS・生体認証・プッシュ通知・DB・MDM・印刷・ML 等 23 カテゴリ × 主要 FW の代表ライブラリ対応表。
+### 言語・フレームワーク比較(`framework_comparison/`)
+
+- [モバイルアプリ言語・フレームワーク 選定観点一覧](./framework_comparison/selection_criteria.md) — 要件/チーム/言語特性/エコシステム/ビジネス/**保守・ガバナンス**/**開発環境**の 7 カテゴリから選定観点を整理。ライセンス・開発元・リリースサイクル・LTS・EOL・商用サポート・IDE・ビルド・Hot Reload・CI/CD 等を含む。
+- [フレームワーク/言語別 プロファイル集](./framework_comparison/framework_profiles.md) — 言語 7 種・フレームワーク 13 種の個別ファクトシート(開発元・ライセンス・最新版・リリース頻度・LTS・EOL・推奨IDE・ビルド・テスト・CI/CD・業務適性・公式リンク)。比較表の一次データソース。
+- [詳細プロファイル: Android ネイティブ(Kotlin + Jetpack Compose)](./framework_comparison/profile_android_native.md) — 本件第一推奨 FW の深掘り版。バージョン履歴・JDK/Gradle/SDK 要件・HT 連携(DataWedge/EMDK)・MDM(App Config/Device Owner)・12 週学習ロードマップ・コスト見積もり・落とし穴・拡充参照リンク。
+- [詳細プロファイル: Kotlin(言語)](./framework_comparison/profile_kotlin.md) — 言語単体の詳細版。H 節(言語特性深掘り観点、18項目)を反映し、パフォーマンス・メモリ管理・エラーハンドリング・メタプログラミング・FFI・ツーリング品質・AI補完相性・学習曲線形状・業界採用実績・ロードマップ・日本語リソース等を収録。
+- [詳細プロファイル: Flutter](./framework_comparison/profile_flutter.md) — FW 単体の詳細版。アーキテクチャ(Engine + Framework + Impeller)・Widget ツリー・Dart 特性・Hot Reload・Windows 開発環境・HT連携(Zebra 公式 DataWedge デモ)・MDM・オフライン(Drift/Isar)・ML Kit・主要採用事例・学習曲線・落とし穴・ロードマップ等を収録。
+- [詳細プロファイル: React Native + Expo](./framework_comparison/profile_react_native.md) — 新アーキ(JSI/Fabric/TurboModules/Bridgeless)・Hermes・Expo SDK/EAS Build/Update・**Windows から iOS ビルド(Mac 不要)**・HT連携(Dev Client 必須)・React Navigation・状態管理(Zustand/TanStack Query)・OTA(EAS Update)・主要採用事例(Meta/MS/Shopify/Discord/Expo 新規)を収録。
+- [詳細プロファイル: Ionic + Capacitor](./framework_comparison/profile_ionic_capacitor.md) — Ionic Framework(Stencil.js Web Components)+ Capacitor(ネイティブランタイム)+ Angular/React/Vue 組合せ。WebView 性能制約・HT Wedge モード・Capacitor プラグイン(公式/Community/Capawesome)・Ionic Appflow OTA・PWA 同時展開・社内業務アプリ最適・jQuery+Java チームに最適(Vue 併用で 2〜3 週立ち上げ)を収録。
+- [詳細プロファイル: Kotlin Multiplatform + Compose Multiplatform](./framework_comparison/profile_kmp.md) — KMP Stable(2023-11)・Compose MP iOS Stable(2024-05)・expected/actual・Source Set 構成・Kotlin/Native・SKIE・主要ライブラリ(Ktor/SQLDelight/Koin)・iOS 連携・本件 Android 永続では不採用推奨の根拠。
+- [言語の活用範囲 と ネイティブ機能アクセス・代表ライブラリ](./framework_comparison/framework_native_features.md) — (1) 各言語で Android 以外に何が作れるか(Web/サーバ/デスクトップ/IoT等)、(2) カメラ・バーコード・NFC・BLE・GPS・生体認証・プッシュ通知・DB・MDM・印刷・ML 等 23 カテゴリ × 主要 FW の代表ライブラリ対応表。
+
+### PWA vs ネイティブ比較(`pwa_vs_native/`)
+
+- [PWA vs ネイティブアプリ 選定観点 詳細](./pwa_vs_native/pwa_vs_native_criteria.md) — 15 カテゴリ 118 項目(配布/更新/性能/**HW 機能 22 項目**(赤外線・シリアル・UWB・Zigbee等含む)/オフライン/BG/セキュリティ/UX/開発/MDM/ポリシー/ビジネス/規制/地域/ハイブリッド)。PWA 不可の足切り 22 項目と決定フロー、典型シナリオ別推奨、本件適用結果。
+- [PWA vs ネイティブ アーキテクチャ比較(PlantUML)](./pwa_vs_native/architecture_comparison.puml) — 6 種類の図を収録: レイヤ構造(deployment)、カメラアクセスフロー(sequence)、HT スキャナ連携、選定決定フロー(activity)、HW アクセス対応マトリクス、更新・配信フロー。
 
 ---
 

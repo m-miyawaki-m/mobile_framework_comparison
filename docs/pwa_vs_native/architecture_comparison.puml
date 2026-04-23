@@ -1,0 +1,437 @@
+' =========================================================
+' PWA / ハイブリッド / ネイティブ アーキテクチャ比較
+' =========================================================
+' レンダリング: PlantUML Web Server、IntelliJ PlantUML Plugin、
+'              VS Code PlantUML Extension いずれかで可
+' =========================================================
+
+@startuml 1_layered_architecture
+
+title PWA / ハイブリッド / ネイティブ\nレイヤ構造比較
+
+skinparam nodesep 30
+skinparam ranksep 40
+skinparam shadowing false
+skinparam defaultFontName "Meiryo"
+skinparam node {
+  BackgroundColor<<pwa>> #E3F2FD
+  BackgroundColor<<hybrid>> #FFF3E0
+  BackgroundColor<<native>> #E8F5E9
+  BorderColor black
+}
+skinparam component {
+  BackgroundColor White
+  BorderColor #888
+}
+skinparam database {
+  BackgroundColor #FFFDE7
+  BorderColor #888
+}
+skinparam cloud {
+  BackgroundColor #ECEFF1
+  BorderColor #888
+}
+
+' --- 純 PWA ---
+node "【① 純 PWA】" as PWA <<pwa>> {
+  component "アプリコード\n(HTML / CSS / JS / TS)" as P_CODE
+  node "ブラウザ / WebView" as P_RT {
+    component "JS エンジン\n(V8 / JavaScriptCore)" as P_JS
+    component "Service Worker\n(キャッシュ / BG Sync)" as P_SW
+  }
+  component "Web API 層\n- getUserMedia\n- Geolocation\n- Web Push\n- Barcode Detection\n- WebAuthn" as P_WAPI
+  component "Chromium 限定 API\n- Web Bluetooth\n- Web NFC(NDEF)\n- Web USB" as P_CWAPI
+  database "IndexedDB /\nLocalStorage /\nCache API" as P_DB
+  cloud "HTTPS サーバ\n(URL 直アクセス\nA2HS / PWA Manifest)" as P_NET
+
+  P_CODE --> P_JS
+  P_CODE --> P_SW
+  P_CODE --> P_WAPI
+  P_CODE --> P_CWAPI
+  P_SW --> P_DB
+  P_SW --> P_NET
+  P_CODE --> P_NET
+}
+
+' --- ハイブリッド ---
+node "【② ハイブリッド (Ionic + Capacitor)】" as HYB <<hybrid>> {
+  component "アプリコード\n(TS + Angular/React/Vue\n+ Ionic UI)" as H_CODE
+  node "WebView (OS 提供)" as H_WV {
+    component "JS エンジン" as H_JS
+  }
+  component "Capacitor Bridge\n(非同期 IPC\nJSON メッセージ)" as H_BRIDGE
+  node "ネイティブ層 (Kotlin/Swift)" as H_NATIVE {
+    component "公式 Plugin\n@capacitor/*\n(Camera, Geolocation,\nFilesystem 等)" as H_PL_OFF
+    component "Community Plugin\nCapawesome\n(BT/NFC/SQLite 等)" as H_PL_COMM
+    component "カスタム Plugin\n(社内独自実装)" as H_PL_CUSTOM
+  }
+  component "Android SDK (全 API)\niOS SDK (全 API)" as H_SDK
+  database "SQLite (plugin) /\nIndexedDB /\nSecure Storage" as H_DB
+  cloud "APK / IPA\nGoogle Play / MDM\nIonic Appflow OTA" as H_NET
+
+  H_CODE --> H_JS
+  H_CODE --> H_BRIDGE
+  H_BRIDGE --> H_PL_OFF
+  H_BRIDGE --> H_PL_COMM
+  H_BRIDGE --> H_PL_CUSTOM
+  H_PL_OFF --> H_SDK
+  H_PL_COMM --> H_SDK
+  H_PL_CUSTOM --> H_SDK
+  H_SDK --> H_DB
+  H_CODE --> H_NET
+}
+
+' --- 純ネイティブ ---
+node "【③ 純ネイティブ (Kotlin + Jetpack Compose)】" as NAT <<native>> {
+  component "アプリコード\n(Kotlin + Compose\n+ Coroutines)" as N_CODE
+  component "Jetpack\n(Hilt / Navigation /\nRoom / WorkManager /\nDataStore / Biometric)" as N_JP
+  node "Android ART (ランタイム)" as N_RT {
+    component "DEX bytecode\nAOT + JIT" as N_DEX
+  }
+  component "Android SDK (全 API)\n- CameraX / ML Kit\n- BT / BLE / NFC / USB\n- 赤外線 / UART / UWB\n- RFID / Scanner SDK\n- Keystore / Biometric\n- Foreground Service" as N_SDK
+  database "Room / SQLite /\nEncryptedSharedPrefs /\nDataStore" as N_DB
+  cloud "AAB / APK\nGoogle Play / MDM /\nFirebase App Distribution" as N_NET
+
+  N_CODE --> N_JP
+  N_JP --> N_DEX
+  N_CODE --> N_SDK
+  N_CODE --> N_DB
+  N_CODE --> N_NET
+}
+
+' 3 つを左右に並べるレイアウト補助
+PWA -[hidden]right- HYB
+HYB -[hidden]right- NAT
+
+note bottom of PWA #E3F2FD
+  **特徴**
+  * URL でアクセス、インストール不要
+  * ストア不要、サーバ更新で即反映
+  * HW アクセスは Web API 範囲内
+  * 長時間 BG 処理不可
+  * HW キーストア利用不可
+end note
+
+note bottom of HYB #FFF3E0
+  **特徴**
+  * Web 資産 + ネイティブ機能の両取り
+  * Android/iOS/PWA/Desktop 同時展開
+  * Plugin 経由で HW 制御可
+  * WebView 性能制約あり
+  * OTA 配信可(Live Update)
+end note
+
+note bottom of NAT #E8F5E9
+  **特徴**
+  * OS の全 API アクセス可
+  * 最高性能・最軽量
+  * HT スキャナ Intent / MDM App Config
+    / Device Owner / ハードウェアキーストア
+    すべて利用可
+  * 8h 連続稼働も安定
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 2_camera_request_flow
+
+title カメラアクセス リクエストフロー(3 方式)
+
+skinparam sequenceParticipant underline
+skinparam defaultFontName "Meiryo"
+skinparam sequenceMessageAlign center
+
+== ① 純 PWA ==
+actor User as U1
+participant "ブラウザ" as B1
+participant "App (JS)" as A1
+participant "Web API\ngetUserMedia" as W1
+participant "カメラ (HW)" as C1
+
+U1 -> B1: URL アクセス
+B1 -> A1: ページロード
+A1 -> W1: navigator.mediaDevices.getUserMedia()
+W1 -> U1: 権限ダイアログ
+U1 -> W1: 許可
+W1 -> C1: アクセス
+C1 --> A1: MediaStream
+
+== ② ハイブリッド(Capacitor)==
+actor User as U2
+participant "ネイティブ App" as N2
+participant "WebView (JS)" as W2
+participant "Capacitor Bridge" as B2
+participant "@capacitor/camera\n(Kotlin Plugin)" as P2
+participant "CameraX" as C2
+
+U2 -> N2: APK 起動
+N2 -> W2: ページロード
+W2 -> B2: Camera.getPhoto()
+B2 -> P2: IPC
+P2 -> U2: 権限ダイアログ
+U2 -> P2: 許可
+P2 -> C2: 呼出
+C2 --> P2: Photo data
+P2 --> B2: 結果
+B2 --> W2: Promise resolve
+
+== ③ 純ネイティブ(Kotlin + Compose)==
+actor User as U3
+participant "Compose UI" as UI3
+participant "ViewModel" as VM3
+participant "CameraX" as C3
+
+U3 -> UI3: APK 起動 → ボタン押下
+UI3 -> VM3: onCapture()
+VM3 -> U3: 権限確認(ActivityResultContracts)
+U3 -> VM3: 許可
+VM3 -> C3: ImageCapture.takePicture()
+C3 --> VM3: ImageProxy
+
+@enduml
+
+' =========================================================
+
+@startuml 3_bluetooth_scanner_integration
+
+title HT バーコードスキャナ(Zebra DataWedge)連携 対比
+
+skinparam defaultFontName "Meiryo"
+skinparam sequenceParticipant underline
+
+== Keyboard Wedge モード(どの方式でも動作)==
+participant "スキャナ HW" as S1
+participant "OS IME 経由" as K1
+participant "App (任意)\n<input> or EditText" as A1
+
+S1 -> K1: バーコード読取
+K1 -> A1: キー入力イベント
+note right of A1
+  ◎ PWA / ハイブリッド / ネイティブ
+  いずれでもフォーカスがあれば
+  自動で受信できる
+end note
+
+== Intent Output モード(PWA では受信不可)==
+participant "スキャナ HW" as S2
+participant "DataWedge Service" as DW2
+participant "Android Broadcast" as AB2
+participant "ネイティブ\nBroadcastReceiver" as BR2
+participant "App" as A2
+
+S2 -> DW2: バーコード読取
+DW2 -> AB2: Intent 発行\n(com.symbol.datawedge.api)
+AB2 -> BR2: Broadcast 受信
+BR2 -> A2: データ連携
+note over AB2, BR2
+  **PWA は Broadcast Intent を\n受信する手段がない ⇒ 不可**
+  ハイブリッド: Capacitor 自作 Plugin
+  ネイティブ: 公式 API で直接受信
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 4_selection_decision_flow
+
+title PWA vs ハイブリッド vs ネイティブ 選定決定フロー
+
+skinparam defaultFontName "Meiryo"
+skinparam activity {
+  BackgroundColor<<pwa>> #E3F2FD
+  BackgroundColor<<hybrid>> #FFF3E0
+  BackgroundColor<<native>> #E8F5E9
+  BackgroundColor<<deny>> #FFCDD2
+}
+
+start
+
+:要件定義;
+
+if (HW 連携要件の足切り\n(BT Classic / BLE(iOS) / NFC(iOS) /\nUSB / 赤外線 / シリアル / UWB /\nZigbee / DataWedge Intent /\nUHF RFID / ハードウェアキーストア /\nMDM App Config / Device Owner /\n物理キー多用 / 長時間 BG 常駐)\nのうち 1 つでも必要?) then (はい)
+  :**PWA 不可**;
+  if (既存 Web 資産活用 or\nWeb+モバイル同時展開 が重要?) then (はい)
+    :**ハイブリッド**\n(Ionic + Capacitor\n + Angular/React/Vue) <<hybrid>>;
+  else (いいえ)
+    :**純ネイティブ**\n(Kotlin + Jetpack Compose\nまたは Flutter) <<native>>;
+  endif
+  stop
+else (足切りなし)
+endif
+
+if (8h 連続稼働 /\n堅牢オフライン同期 /\nハードウェアキーストア\nの必要性は?) then (あり)
+  :**ネイティブまたは\nハイブリッド推奨** <<native>>;
+  stop
+else (無し)
+endif
+
+if (既存 Web 資産活用 /\n短期開発 /\n軽量照会系?) then (はい)
+  :**純 PWA**\n(+ Chrome キオスク) <<pwa>>;
+  stop
+else (いいえ)
+  if (iOS 展開や\nブランド統一が重要?) then (はい)
+    :**ネイティブまたは Flutter** <<native>>;
+  else (いいえ)
+    :**ハイブリッド**\n(Ionic + Capacitor) <<hybrid>>;
+  endif
+  stop
+endif
+
+@enduml
+
+' =========================================================
+
+@startuml 5_hardware_access_matrix
+
+title ハードウェアアクセス 対応マトリクス
+
+skinparam defaultFontName "Meiryo"
+skinparam classBackgroundColor White
+skinparam classBorderColor #888
+
+class "PWA" as PWA #E3F2FD {
+  カメラ: ◎
+  位置情報: ◎
+  センサー: ◎
+  生体認証(WebAuthn): ○
+  BT Classic: ×
+  BLE: △(Chromium Android)
+  NFC: △(Chromium, NDEF)
+  USB: △(Chromium)
+  赤外線: ×
+  シリアル: ×
+  UWB: ×
+  Zigbee/Thread/Matter: ×
+  UHF RFID: ×
+  DataWedge Wedge: ◎
+  DataWedge Intent: ×
+  プリンタ(BT/USB): ×
+  プリンタ(ネットワーク): ◎
+  物理キー: △
+  ハードウェアキーストア: ×
+  長時間 BG: ×
+  MDM App Config: ×
+}
+
+class "ハイブリッド\n(Capacitor)" as HYB #FFF3E0 {
+  カメラ: ◎
+  位置情報: ◎
+  センサー: ◎
+  生体認証: ◎
+  BT Classic: ◎
+  BLE: ◎
+  NFC: ◎
+  USB: ◎
+  赤外線: ○(plugin 自作)
+  シリアル: ◎(plugin)
+  UWB: △
+  Zigbee/Thread/Matter: ○(plugin 自作)
+  UHF RFID: △(ベンダ SDK)
+  DataWedge Wedge: ◎
+  DataWedge Intent: ○(plugin 自作)
+  プリンタ(BT/USB): ◎
+  プリンタ(ネットワーク): ◎
+  物理キー: △
+  ハードウェアキーストア: ○
+  長時間 BG: △
+  MDM App Config: ○(plugin)
+}
+
+class "純ネイティブ\n(Kotlin)" as NAT #E8F5E9 {
+  カメラ: ◎
+  位置情報: ◎
+  センサー: ◎
+  生体認証: ◎
+  BT Classic: ◎
+  BLE: ◎
+  NFC: ◎
+  USB: ◎
+  赤外線: ◎
+  シリアル: ◎
+  UWB: ◎
+  Zigbee/Thread/Matter: ◎
+  UHF RFID: ◎(ベンダ SDK)
+  DataWedge Wedge: ◎
+  DataWedge Intent: ◎
+  プリンタ(BT/USB): ◎
+  プリンタ(ネットワーク): ◎
+  物理キー: ◎
+  ハードウェアキーストア: ◎
+  長時間 BG: ◎
+  MDM App Config: ◎
+}
+
+PWA -[hidden]right- HYB
+HYB -[hidden]right- NAT
+
+note bottom #FFFFFF
+  凡例: ◎=完全対応 / ○=標準的に対応 / △=制約あり・要自作 / ×=原理的に不可
+  **太字 ×** は PWA が即除外になる足切り項目
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 6_update_distribution_flow
+
+title 更新・配信 フロー比較
+
+skinparam defaultFontName "Meiryo"
+
+== ① 純 PWA ==
+actor 開発者 as D1
+participant "CI/CD" as CI1
+participant "HTTPS サーバ" as S1
+participant "Service Worker\n(端末内)" as SW1
+actor ユーザ as U1
+
+D1 -> CI1: git push
+CI1 -> S1: ビルド + デプロイ
+note right of S1
+  サーバ更新 = 即反映
+  ストア審査 **不要**
+end note
+S1 --> SW1: 新バージョン取得\n(次回アクセス or 定期チェック)
+SW1 --> U1: 新画面を表示
+
+== ② ハイブリッド(Capacitor + Live Update)==
+actor 開発者 as D2
+participant "CI/CD" as CI2
+participant "Ionic Appflow /\n自前 CDN" as S2
+participant "Capacitor Live Update\n(端末内)" as LU2
+actor ユーザ as U2
+
+D2 -> CI2: git push
+CI2 -> S2: Web アセット配信
+note right of S2
+  **Web 部分は OTA 即反映**
+  ネイティブコード変更時は
+  ストア審査 or MDM 配信
+end note
+S2 --> LU2: 新アセット取得
+LU2 --> U2: 次回起動で反映
+
+== ③ 純ネイティブ ==
+actor 開発者 as D3
+participant "CI/CD" as CI3
+participant "Google Play\nConsole" as GP3
+participant "MDM" as MDM3
+actor ユーザ as U3
+
+D3 -> CI3: git push
+CI3 -> CI3: AAB ビルド + 署名
+CI3 -> GP3: 公開
+note right of GP3
+  Play 審査: 数時間〜数日
+  **OTA 基本なし**
+  In-App Update / Staged Rollout
+end note
+GP3 --> U3: 更新通知
+CI3 -> MDM3: APK 配信(社内配布)
+MDM3 --> U3: 強制インストール
+
+@enduml
