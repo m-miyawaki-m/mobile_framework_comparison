@@ -468,6 +468,7 @@ Android 専用前提では、クロスプラットフォームの最大価値「
 - [詳細プロファイル: React Native + Expo](./profile_react_native.md) — 新アーキ(JSI/Fabric/TurboModules/Bridgeless)・Hermes・Expo SDK/EAS Build/Update・**Windows から iOS ビルド(Mac 不要)**・HT連携(Dev Client 必須)・React Navigation・状態管理(Zustand/TanStack Query)・OTA(EAS Update)・主要採用事例(Meta/MS/Shopify/Discord/Expo 新規)を収録。
 - [詳細プロファイル: Ionic + Capacitor](./profile_ionic_capacitor.md) — Ionic Framework(Stencil.js Web Components)+ Capacitor(ネイティブランタイム)+ Angular/React/Vue 組合せ。WebView 性能制約・HT Wedge モード・Capacitor プラグイン(公式/Community/Capawesome)・Ionic Appflow OTA・PWA 同時展開・社内業務アプリ最適・jQuery+Java チームに最適(Vue 併用で 2〜3 週立ち上げ)を収録。
 - [詳細プロファイル: Kotlin Multiplatform + Compose Multiplatform](./profile_kmp.md) — KMP Stable(2023-11)・Compose MP iOS Stable(2024-05)・expected/actual・Source Set 構成・Kotlin/Native・SKIE・主要ライブラリ(Ktor/SQLDelight/Koin)・iOS 連携・本件 Android 永続では不採用推奨の根拠。
+- [PWA vs ネイティブアプリ 選定観点 詳細](./pwa_vs_native_criteria.md) — 15 カテゴリ 118 項目(配布/更新/性能/**HW 機能 22 項目**(赤外線・シリアル・UWB・Zigbee等含む)/オフライン/BG/セキュリティ/UX/開発/MDM/ポリシー/ビジネス/規制/地域/ハイブリッド)。PWA 不可の足切り 22 項目と決定フロー、典型シナリオ別推奨、本件適用結果。
 - [言語の活用範囲 と ネイティブ機能アクセス・代表ライブラリ](./framework_native_features.md) — (1) 各言語で Android 以外に何が作れるか(Web/サーバ/デスクトップ/IoT等)、(2) カメラ・バーコード・NFC・BLE・GPS・生体認証・プッシュ通知・DB・MDM・印刷・ML 等 23 カテゴリ × 主要 FW の代表ライブラリ対応表。
 
 ---
