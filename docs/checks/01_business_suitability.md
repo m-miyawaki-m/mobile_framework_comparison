@@ -162,7 +162,7 @@
 | Capacitor | 4 | 1.0 | Ionic Enterprise 公式契約 |
 | KMP | 4 | 1.0 | JetBrains 商用契約 |
 | Compose Multiplatform | 4 | 1.0 | JetBrains 商用契約 |
-| .NET MAUI | 5 | 1.0 | Microsoft 商用サポート、Azure DevOps 統合 |
+| .NET MAUI | 4 | 1.0 | Microsoft 単独商用サポート、Azure DevOps 統合(.NET LTS と同期) |
 | NativeScript | 1 | 1.0 | 商用サポートほぼなし |
 | Apache Cordova | 1 | 1.0 | 商用サポートなし |
 | Xamarin | 2 | 1.0 | Microsoft 拡張サポート(EOL 後は限定) |
@@ -274,7 +274,7 @@
 | Capacitor | 3 | 2 | 2 | 2 | 4 | 5 | 3 | 3 | 3.00 | 3.00 | ★★★ |
 | KMP | 3 | 3 | 5 | 4 | 4 | 5 | 3 | 2 | 3.63 | 3.63 | ★★★★ |
 | Compose Multiplatform | 2 | 2 | 4 | 3 | 4 | 5 | 2 | 1 | 2.88 | 2.88 | ★★★ |
-| .NET MAUI | 4 | 4 | 3 | 4 | 5 | 5 | 3 | 4 | 4.00 | 4.00 | ★★★★ |
+| .NET MAUI | 4 | 4 | 3 | 4 | 4 | 5 | 3 | 4 | 3.88 | 3.88 | ★★★★ |
 | NativeScript | 2 | 1 | 3 | 2 | 1 | 5 | 3 | 1 | 2.25 | 2.25 | ★★ |
 | Apache Cordova | 1 | 2 | 2 | 1 | 1 | 5 | 4 | 2 | 2.25 | 2.25 | ★★ |
 | Xamarin | 1 | 1 | 3 | 2 | 2 | 5 | 1 | 2 | 2.13 | 2.13 | ★★ |
