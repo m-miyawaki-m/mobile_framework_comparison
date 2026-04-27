@@ -141,3 +141,149 @@
 | PWA(JS / TS) | 4 | 1.0 | Web 標準 + 任意フレームワーク |
 
 ---
+
+## L5: エコシステム・ツーリング学習量
+
+### アンカー
+
+- **5**: 単一CLIで完結(Flutter `flutter` コマンド)
+- **4**: 標準ビルドツールで完結(Kotlin: Gradle、C#: dotnet CLI)
+- **3**: ビルドツール + 依存管理が分離(Java: Gradle / Maven)
+- **2**: バンドラ + パッケージマネージャ + ランタイム多重(RN: Metro + npm + Gradle + Xcode)
+- **1**: 複数バンドラ・複数ランタイム選択(Web 全般)
+
+### スコア表
+
+| FW(主言語) | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native(Kotlin) | 4 | 1.0 | Gradle 単独、Android Studio 統合 |
+| Flutter(Dart) | 5 | 1.0 | flutter CLI で全部完結 |
+| React Native(JS / TS) | 2 | 1.0 | Metro + npm + Gradle + Xcode |
+| Expo(JS / TS) | 4 | 1.0 | EAS で抽象化、初学者に易 |
+| Ionic Framework(TS) | 3 | 1.0 | npm + Ionic CLI + Capacitor + Web ビルドツール |
+| Capacitor(TS) | 4 | 1.0 | Capacitor CLI 中心、シンプル |
+| KMP(Kotlin) | 2 | 1.0 | Gradle Kotlin DSL + Xcode + Android Studio + KMP plugin |
+| Compose Multiplatform(Kotlin) | 2 | 1.0 | KMP と同等 + iOS UI 統合 |
+| .NET MAUI(C#) | 4 | 1.0 | dotnet CLI / Visual Studio 統合 |
+| NativeScript(TS / JS) | 3 | 1.0 | NS CLI + npm |
+| Apache Cordova(JS) | 3 | 1.0 | Cordova CLI + Web ビルドツール |
+| Xamarin(C#) | 3 | 1.0 | Visual Studio 中心、Xamarin.Forms 概念追加 |
+| PWA(JS / TS) | 1 | 1.0 | バンドラ・パッケージマネージャ・ランタイム選択肢多 |
+
+---
+
+## L6: 公式ドキュメント・教材充実度
+
+### アンカー
+
+- **5**: 日本語含めて潤沢(Java、Kotlin、React、Vue、Angular、TypeScript)
+- **4**: 英語豊富 + 日本語コミュニティ活発(Flutter、Dart)
+- **3**: 英語豊富だが日本語限定的(C#、Swift)
+- **2**: 英語の散発記事中心(KMP、Compose Multiplatform)
+- **1**: 英語でも限定的(NativeScript、レガシFW)
+
+### スコア表
+
+| FW(主言語) | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native(Kotlin) | 5 | 1.0 | 公式 codelab + Kotlin もくもく会、書籍多数、日本語潤沢 |
+| Flutter(Dart) | 4 | 1.0 | flutter.jp / FlutterKaigi、近年急増 |
+| React Native(JS / TS) | 3 | 1.0 | 英語記事多、日本語は限定的 |
+| Expo(JS / TS) | 3 | 1.0 | RN 同等、Expo 公式 docs は良質 |
+| Ionic Framework(TS) | 3 | 1.0 | レガシー情報多、日本語は中程度 |
+| Capacitor(TS) | 3 | 1.0 | Ionic と同レベル |
+| KMP(Kotlin) | 2 | 1.0 | 海外記事頼り、日本語限定 |
+| Compose Multiplatform(Kotlin) | 2 | 1.0 | 新しく日本語資料少 |
+| .NET MAUI(C#) | 3 | 1.0 | Microsoft Learn + Microsoft 社内向け中心 |
+| NativeScript(TS / JS) | 1 | 1.0 | ほぼ皆無 |
+| Apache Cordova(JS) | 2 | 1.0 | レガシ情報のみ、新規教材ほぼなし |
+| Xamarin(C#) | 2 | 1.0 | EOL のため新規教材なし |
+| PWA(JS / TS) | 4 | 1.0 | MDN / web.dev / 各ブラウザベンダ公式が充実 |
+
+---
+
+## L7: AI / LLM 補完の精度
+
+### アンカー
+
+- **5**: 型情報多く誤補完少(TypeScript、Kotlin)
+- **4**: 学習データ量が多く高精度(Java、JavaScript、C#)
+- **3**: 中程度(Dart、Swift)
+- **2**: 学習データ少なく型情報も限定的(KMP 新機能、Compose MP)
+- **1**: 動的すぎて補完信頼性低(素の JavaScript の動的構造)
+
+### スコア表
+
+| FW(主言語) | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native(Kotlin) | 5 | 1.0 | Kotlin 型情報 + 大量学習データ |
+| Flutter(Dart) | 3 | 1.0 | 中規模学習データ、型情報あり |
+| React Native(JS / TS) | 5 | 1.0 | TS 想定で精度高、JS 単独だと 4 |
+| Expo(JS / TS) | 5 | 1.0 | RN 同等 |
+| Ionic Framework(TS) | 5 | 1.0 | TS 中心、Web 知識多 |
+| Capacitor(TS) | 5 | 1.0 | TS 中心 |
+| KMP(Kotlin) | 3 | 1.0 | Kotlin 自体は高精度だが KMP 固有 API は学習データ少 |
+| Compose Multiplatform(Kotlin) | 2 | 1.0 | 新しく学習データ限定 |
+| .NET MAUI(C#) | 4 | 1.0 | C# 高精度、MAUI 固有はやや学習データ少 |
+| NativeScript(TS / JS) | 3 | 1.0 | TS 中心だが NS 固有は学習データ少 |
+| Apache Cordova(JS) | 4 | 1.0 | JS 大量学習データだが Cordova 固有は古い |
+| Xamarin(C#) | 4 | 1.0 | C# 高精度、ただし EOL で誤補完(MAUI と混在)あり得 |
+| PWA(JS / TS) | 5 | 1.0 | Web 標準は学習データ最多 |
+
+---
+
+## L8: トラブルシューティング容易度
+
+### アンカー
+
+- **5**: エラーメッセージ自明 + 統合デバッガ強力(Kotlin + Android Studio、C# + Visual Studio)
+- **4**: スタックトレース読みやすい(Java、Dart)
+- **3**: 標準的(TypeScript、Swift)
+- **2**: スタックトレース難読 or デバッガ制約あり(JavaScript の minified 環境)
+- **1**: 多層エラーで原因特定困難(RN: Metro + ネイティブ層 + Xcode / Gradle 多層)
+
+### スコア表
+
+| FW(主言語) | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native(Kotlin) | 5 | 1.0 | Logcat + Android Studio Profiler、エラー直球 |
+| Flutter(Dart) | 4 | 1.0 | flutter logs + DevTools |
+| React Native(JS / TS) | 1 | 1.0 | Metro + ネイティブ層 + Xcode / Gradle で多層 |
+| Expo(JS / TS) | 2 | 1.0 | Expo DevTools で改善されるが多層性は同じ |
+| Ionic Framework(TS) | 3 | 1.0 | Web 開発と同感覚(Chrome DevTools)、ネイティブ問題は別途 |
+| Capacitor(TS) | 3 | 1.0 | Web 側 Chrome DevTools、ネイティブは Android Studio / Xcode |
+| KMP(Kotlin) | 3 | 1.0 | Android 側強力、iOS 側は Xcode 併用必要 |
+| Compose Multiplatform(Kotlin) | 3 | 1.0 | KMP 同等 |
+| .NET MAUI(C#) | 5 | 1.0 | Visual Studio Diagnostic Tools 強力 |
+| NativeScript(TS / JS) | 3 | 1.0 | NS DevTools + Chrome DevTools |
+| Apache Cordova(JS) | 3 | 1.0 | Web 開発感覚、ネイティブは別 |
+| Xamarin(C#) | 4 | 1.0 | Visual Studio Debugger + Mac リモート(EOL) |
+| PWA(JS / TS) | 4 | 1.0 | Chrome DevTools + Service Worker デバッガ充実 |
+
+---
+
+## 集計
+
+| FW(主言語) | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | 単純平均 | 重み付き平均 | ★換算 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Android Native(Kotlin) | 5 | 5 | 5 | 4 | 4 | 5 | 5 | 5 | 4.75 | 4.75 | ★★★★★ |
+| Flutter(Dart) | 4 | 5 | 5 | 3 | 5 | 4 | 3 | 4 | 4.13 | 4.13 | ★★★★ |
+| React Native(JS / TS) | 2 | 4 | 4 | 2 | 2 | 3 | 5 | 1 | 2.88 | 2.88 | ★★★ |
+| Expo(JS / TS) | 2 | 4 | 4 | 2 | 4 | 3 | 5 | 2 | 3.25 | 3.25 | ★★★ |
+| Ionic Framework(TS) | 4 | 4 | 3 | 1 | 3 | 3 | 5 | 3 | 3.25 | 3.25 | ★★★ |
+| Capacitor(TS) | 4 | 4 | 4 | 4 | 4 | 3 | 5 | 3 | 3.88 | 3.88 | ★★★★ |
+| KMP(Kotlin) | 5 | 5 | 5 | 4 | 2 | 2 | 3 | 3 | 3.63 | 3.63 | ★★★★ |
+| Compose Multiplatform(Kotlin) | 4 | 5 | 5 | 3 | 2 | 2 | 2 | 3 | 3.25 | 3.25 | ★★★ |
+| .NET MAUI(C#) | 5 | 4 | 4 | 4 | 4 | 3 | 4 | 5 | 4.13 | 4.13 | ★★★★ |
+| NativeScript(TS / JS) | 4 | 4 | 4 | 3 | 3 | 1 | 3 | 3 | 3.13 | 3.13 | ★★★ |
+| Apache Cordova(JS) | 3 | 1 | 4 | 4 | 3 | 2 | 4 | 3 | 3.00 | 3.00 | ★★★ |
+| Xamarin(C#) | 4 | 3 | 4 | 4 | 3 | 2 | 4 | 4 | 3.50 | 3.50 | ★★★★ |
+| PWA(JS / TS) | 4 | 4 | 4 | 4 | 1 | 4 | 5 | 4 | 3.75 | 3.75 | ★★★★ |
+
+> 注: 各セルのスコアは上記アンカーに基づく初期値(2026-04-28 時点)。
+
+---
+
+## 更新履歴
+
+- **2026-04-28**: 初版作成。L1〜L8 のアンカー定義と 13 FW の初期スコアを記載。
