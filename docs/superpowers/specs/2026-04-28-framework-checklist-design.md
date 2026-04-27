@@ -32,31 +32,41 @@
 
 ## 2. スコープ
 
-### 評価対象(MVP 第一版)
+### 評価対象
 
-**フレームワーク(7種)**:
-- ネイティブ Android(Jetpack Compose + Android SDK)
-- Flutter
-- React Native(素の状態)
-- Expo(React Native + Expo SDK)
-- Ionic + Capacitor
-- Kotlin Multiplatform (KMP)
-- .NET MAUI
+**評価は FW 単位で行う**。言語は各 FW の主言語として B 列に表記され、行としては独立しない。
+評価対象は [`framework_profiles.md`](../../framework_comparison/framework_profiles.md) に記載の 13 フレームワーク:
 
-**言語(6種)**:
-- Kotlin
-- Dart
-- TypeScript
-- JavaScript
-- Java
-- C#
+| # | FW | 主言語(B列) | 備考 |
+|---|---|---|---|
+| 1 | Android ネイティブ(Jetpack Compose + Android SDK) | Kotlin | 業務アプリ第一推奨 |
+| 2 | Flutter | Dart | |
+| 3 | React Native | JavaScript / TypeScript | 素のRN |
+| 4 | Expo(React Native + Expo SDK) | JavaScript / TypeScript | EAS Build含む |
+| 5 | Ionic Framework | TypeScript(Angular/React/Vue) | UI層 |
+| 6 | Capacitor | TypeScript | ネイティブブリッジ層 |
+| 7 | Kotlin Multiplatform (KMP) | Kotlin | ロジック共通化 |
+| 8 | Compose Multiplatform | Kotlin | UI共通化、KMP補完 |
+| 9 | .NET MAUI | C# | |
+| 10 | NativeScript | TypeScript / JavaScript | |
+| 11 | Apache Cordova | JavaScript | 参考・縮小傾向 |
+| 12 | Xamarin | C# | EOL(2024-05、参考のみ) |
+| 13 | PWA | JavaScript / TypeScript | 参考、ブラウザ前提 |
 
-**評価対象外**(現時点):
-- Swift / SwiftUI(参考言及のみ)
-- NativeScript / Cordova / Xamarin(EOL or 縮小傾向)
+**EOL/レガシー扱いの方針**: Cordova / Xamarin / PWA も評価対象に含める。低スコアが付くことで「なぜ採用すべきでないか」の根拠資料として機能する。
+
+### 言語の扱い
+
+- 言語は概要シートで FW 行の B 列(主言語)として表示される
+- 言語自体の B/D/L スコアは付けない(同じ言語でも採用 FW で評価が変わるため)
+- 言語固有の事実情報(対応領域・PWA対応・代表採用例 等)は `04_language_features.md` にカード形式で残す(FW 行から参照可能)
+
+### 評価対象外
+
+- Swift / SwiftUI(iOS 主軸プロジェクト向け、`framework_profiles.md` でも参考扱い)
 - Unity / Unreal(ゲーム特化、業務アプリ用途外)
 
-第一版では Android 業務アプリ視点で実用候補となる FW/言語に絞り、評価対象拡張は次版以降で扱う。
+これらは将来の拡張ポイントとして 11 章に記載。
 
 ---
 
@@ -184,16 +194,23 @@ docs/checks/
 
 ### 5.3 記入例
 
-| FW/言語 | 主言語 | 全活用ターゲット | 限定利用ターゲット | 限定利用ライブラリ等 | 業務適正度 | 開発体験 | 習得難易度 |
+| FW | 主言語 | 全活用ターゲット | 限定利用ターゲット | 限定利用ライブラリ等 | 業務適正度 | 開発体験 | 習得難易度 |
 |---|---|---|---|---|---|---|---|
 | Android ネイティブ | Kotlin | Android | — | — | ★★★★★ | ★★★★ | ★★★★ |
 | Flutter | Dart | Android, iOS | Windows, macOS, Linux, 組込機器 | Flutter Desktop / Embedded | ★★★★ | ★★★★★ | ★★★ |
-| Ionic + Capacitor | TypeScript | Android, iOS | Windows, macOS, Linux | Capacitor Electron | ★★★★ | ★★★★ | ★★★ |
+| React Native | JavaScript / TypeScript | Android, iOS | Windows, macOS | RN for Windows/macOS | ★★★ | ★★★★ | ★★★ |
+| Expo | JavaScript / TypeScript | Android, iOS | — | — | ★★★ | ★★★★★ | ★★★★ |
+| Ionic Framework | TypeScript | Android, iOS | — | (UI層、配布は Capacitor 等経由) | ★★★ | ★★★★ | ★★★ |
+| Capacitor | TypeScript | Android, iOS | Windows, macOS, Linux | Capacitor Electron / Tauri |  ★★★★ | ★★★★ | ★★★ |
 | KMP | Kotlin | Android, iOS | Windows, macOS, Linux | Compose Multiplatform | ★★★★ | ★★★ | ★★ |
-| Kotlin(言語) | — | Android | Windows, macOS, Linux, iOS | KMP / Compose Desktop / Kotlin/JS | ★★★★ | ★★★★ | ★★★★ |
-| TypeScript(言語) | — | — | Android, iOS, Windows, macOS, Linux | RN / Ionic / Electron / Tauri / Node.js | ★★★★ | ★★★★ | ★★★ |
+| Compose Multiplatform | Kotlin | Android, iOS, Windows, macOS, Linux | — | — | ★★★ | ★★★ | ★★ |
+| .NET MAUI | C# | Android, iOS, Windows, macOS | Linux | サードパーティ実装 | ★★★★ | ★★★★ | ★★★ |
+| NativeScript | TypeScript / JavaScript | Android, iOS | — | — | ★★ | ★★ | ★★ |
+| Apache Cordova | JavaScript | Android, iOS | — | — | ★★ | ★★ | ★★★ |
+| Xamarin | C# | Android, iOS | — | — | ★(EOL) | — | — |
+| PWA | JavaScript / TypeScript | (Web ブラウザ) | Android, iOS, Windows, macOS, Linux | OS の PWA 対応(機能制限あり) | ★★ | ★★★ | ★★★★ |
 
-注: 上の★は記入例であり、確定値ではない。実装時に各シートで根拠付きで決定する。FW/言語のいずれも 01〜03 のスコア対象とする(個別項目で該当しない場合のみ N/A を使用)。
+注: 上の★は記入例であり、確定値ではない。実装時に各シートで根拠付きで決定する。EOL扱いの Xamarin は B1 で 1 点となるため総合★も低くなり、本シートでは「採用すべきでない根拠資料」として残す。
 
 ---
 
