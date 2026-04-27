@@ -85,7 +85,7 @@
 ### アンカー
 
 - **5**: 単一CLIで数分・数GB(Expo、Ionic)
-- **4**: 公式 IDE 一発で完結、中程度(Android Native、Flutter Android のみ、.NET MAUI)
+- **4**: 公式 IDE 一発で完結、中程度(Android Native、Flutter Android のみ)
 - **3**: 標準的、複数ツール併用(React Native Android のみ)
 - **2**: 重い、複数 IDE / SDK 必要(Flutter Android+iOS、KMP)
 - **1**: 数十GB・初回数十分(KMP + Compose MP フル構成)
