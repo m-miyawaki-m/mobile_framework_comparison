@@ -139,3 +139,150 @@
 | PWA | 5 | 1.0 | Chrome DevTools / Lighthouse / Performance Observer |
 
 ---
+
+## D5: テストフレームワーク成熟度
+
+### アンカー
+
+- **5**: Unit / UI / E2E まで公式整備(Flutter: flutter_test / Widget Test / integration_test、Android: JUnit / Espresso / Compose Test)
+- **4**: 公式 + 事実上標準サードパーティ(React Native: Jest + RNTL + Detox、.NET MAUI: xUnit + Appium)
+- **3**: 標準的だが E2E はサードパーティ依存(Ionic: Jest / Vitest + Cypress / Playwright)
+- **2**: 公式整備限定的(KMP: kotlin-test + プラットフォーム別)
+- **1**: コミュニティ寄せ集め
+
+### スコア表
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native | 5 | 1.0 | JUnit / MockK / Espresso / Compose Test |
+| Flutter | 5 | 1.0 | flutter_test / Widget Test / integration_test |
+| React Native | 4 | 1.0 | Jest + RNTL + Detox / Maestro |
+| Expo | 4 | 1.0 | RN 同等、EAS で配布テストも |
+| Ionic Framework | 3 | 1.0 | Jest / Vitest + Cypress / Playwright / Appium |
+| Capacitor | 3 | 1.0 | Ionic 同等 |
+| KMP | 2 | 1.0 | kotlin-test / JUnit / XCTest、Platform 別 |
+| Compose Multiplatform | 2 | 1.0 | KMP 同等 |
+| .NET MAUI | 4 | 1.0 | xUnit / NUnit / MSTest + MAUI UI Tests + Appium |
+| NativeScript | 2 | 1.0 | Jasmine / Mocha + Appium |
+| Apache Cordova | 2 | 1.0 | Jasmine + Appium |
+| Xamarin | 4 | 1.0 | xUnit + Xamarin UITest |
+| PWA | 4 | 1.0 | Jest / Vitest + Cypress / Playwright + Lighthouse |
+
+---
+
+## D6: CI/CD・配布の容易度
+
+### アンカー
+
+- **5**: 公式クラウドビルド + OTA 配布(Expo + EAS Build / Update)
+- **4**: 公式 CI 連携 + 一般的サービス対応(Flutter + Codemagic、.NET MAUI + Azure DevOps)
+- **3**: 標準的な CI で構築可(Android Native + GitHub Actions / Bitrise)
+- **2**: 自前構築の比重高(KMP)
+- **1**: CI 構築が複雑(マルチプラットフォーム + マルチランタイム)
+
+### スコア表
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native | 3 | 1.0 | GitHub Actions / Bitrise / Firebase App Distribution |
+| Flutter | 4 | 1.0 | Codemagic 公式推奨、Firebase Test Lab 連携 |
+| React Native | 3 | 1.0 | Bitrise / GitHub Actions、Mac runner 必要 |
+| Expo | 5 | 1.0 | EAS Build + EAS Update(OTA)で全部完結、Mac 不要 |
+| Ionic Framework | 4 | 1.0 | Ionic Appflow + Live Update(Enterprise) |
+| Capacitor | 4 | 1.0 | Ionic Appflow / Live Update |
+| KMP | 2 | 1.0 | 自前構築主、GitHub Actions / Bitrise の Mac runner 必要 |
+| Compose Multiplatform | 2 | 1.0 | KMP 同等 |
+| .NET MAUI | 4 | 1.0 | Azure DevOps Pipelines / GitHub Actions / App Center 後継 |
+| NativeScript | 2 | 1.0 | NS CLI + 自前 CI |
+| Apache Cordova | 2 | 1.0 | 自前構築、PhoneGap Build は EOL |
+| Xamarin | 3 | 1.0 | App Center(廃止予定)、Azure DevOps |
+| PWA | 5 | 1.0 | 静的ホスティング + Service Worker 配布、CI 標準 |
+
+---
+
+## D7: ライブラリ・パッケージエコシステム
+
+### アンカー
+
+- **5**: 公式レジストリ厚く品質管理あり(npm: 規模最大だが玉石混交、pub.dev: スコア付き)
+- **4**: 質は安定、量は中程度(Maven Central、NuGet)
+- **3**: 公式中心で品質高いが量限定(Kotlin、Dart)
+- **2**: 拡張前提でコミュニティ依存(Capacitor プラグイン)
+- **1**: エコシステム狭い(NativeScript)
+
+### スコア表
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native | 4 | 1.0 | Maven Central + Google Maven、品質安定 |
+| Flutter | 5 | 1.0 | pub.dev はスコア付き品質管理あり |
+| React Native | 5 | 1.0 | npm 最大規模、ただし玉石混交 |
+| Expo | 5 | 1.0 | Expo SDK + npm |
+| Ionic Framework | 4 | 1.0 | npm + Ionic 公式 + Capacitor プラグイン |
+| Capacitor | 2 | 1.0 | Capacitor プラグインはコミュニティ依存、品質ばらつき |
+| KMP | 3 | 1.0 | Maven Central + KMP 互換ライブラリ、量限定 |
+| Compose Multiplatform | 3 | 1.0 | KMP 同等 |
+| .NET MAUI | 4 | 1.0 | NuGet、品質安定、量も十分 |
+| NativeScript | 1 | 1.0 | エコシステム狭い |
+| Apache Cordova | 2 | 1.0 | プラグインは縮小傾向 |
+| Xamarin | 3 | 1.0 | NuGet + Xamarin.Forms ライブラリ(EOL のため新規少) |
+| PWA | 5 | 1.0 | npm 全部利用可 |
+
+---
+
+## D8: 開発OSの柔軟性
+
+### アンカー
+
+- **5**: Win / Mac / Linux 全部で開発・ビルド可、Mac 不要(Expo + EAS Build で iOS も Mac 不要)
+- **4**: 全 OS 対応だが iOS は Mac 必要(Flutter、KMP、.NET MAUI、Ionic)
+- **3**: 主要 OS 対応(Android Native、React Native: Android のみ Win 可)
+- **2**: 特定 OS 縛り部分あり(.NET MAUI iOS は Mac 経由)
+- **1**: 特定 OS 必須(Swift on macOS のみ)
+
+### スコア表
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| Android Native | 3 | 1.0 | Win / Mac / Linux で開発可、Android 専用なら 5 だが iOS 出力不可で 3 |
+| Flutter | 4 | 1.0 | Win / Mac / Linux 開発可、iOS ビルドは Mac 必須 |
+| React Native | 3 | 1.0 | Android は全 OS、iOS は Mac 必須 |
+| Expo | 5 | 1.0 | EAS Build で iOS も Mac 不要、Windows 開発時の最大の利点 |
+| Ionic Framework | 4 | 1.0 | Web 開発感覚、iOS ビルドのみ Mac 必須 |
+| Capacitor | 4 | 1.0 | Ionic 同等 |
+| KMP | 4 | 1.0 | Win / Mac / Linux 開発可、iOS は Mac + Xcode 必須 |
+| Compose Multiplatform | 4 | 1.0 | KMP 同等 |
+| .NET MAUI | 4 | 1.0 | Win / Mac で開発可、iOS は Mac 経由 |
+| NativeScript | 3 | 1.0 | Win / Mac / Linux 対応、iOS は Mac 必須 |
+| Apache Cordova | 3 | 1.0 | 同上 |
+| Xamarin | 2 | 1.0 | Visual Studio Win 中心、iOS は Mac リモート(EOL) |
+| PWA | 5 | 1.0 | OS 選ばず、ブラウザがあれば動く |
+
+---
+
+## 集計
+
+| FW | D1 | D2 | D3 | D4 | D5 | D6 | D7 | D8 | 単純平均 | 重み付き平均 | ★換算 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Android Native | 5 | 2 | 4 | 5 | 5 | 3 | 4 | 3 | 3.88 | 3.88 | ★★★★ |
+| Flutter | 4 | 5 | 3 | 5 | 5 | 4 | 5 | 4 | 4.38 | 4.38 | ★★★★ |
+| React Native | 3 | 4 | 3 | 4 | 4 | 3 | 5 | 3 | 3.63 | 3.63 | ★★★★ |
+| Expo | 3 | 4 | 5 | 4 | 4 | 5 | 5 | 5 | 4.38 | 4.38 | ★★★★ |
+| Ionic Framework | 4 | 5 | 5 | 3 | 3 | 4 | 4 | 4 | 4.00 | 4.00 | ★★★★ |
+| Capacitor | 4 | 4 | 5 | 3 | 3 | 4 | 2 | 4 | 3.63 | 3.63 | ★★★★ |
+| KMP | 4 | 2 | 2 | 4 | 2 | 2 | 3 | 4 | 2.88 | 2.88 | ★★★ |
+| Compose Multiplatform | 3 | 3 | 1 | 4 | 2 | 2 | 3 | 4 | 2.75 | 2.75 | ★★★ |
+| .NET MAUI | 5 | 4 | 3 | 5 | 4 | 4 | 4 | 4 | 4.13 | 4.13 | ★★★★ |
+| NativeScript | 2 | 4 | 3 | 3 | 2 | 2 | 1 | 3 | 2.50 | 2.50 | ★★★ |
+| Apache Cordova | 3 | 4 | 4 | 3 | 2 | 2 | 2 | 3 | 2.88 | 2.88 | ★★★ |
+| Xamarin | 4 | 3 | 2 | 5 | 4 | 3 | 3 | 2 | 3.25 | 3.25 | ★★★ |
+| PWA | 4 | 5 | 5 | 5 | 4 | 5 | 5 | 5 | 4.75 | 4.75 | ★★★★★ |
+
+> 注: 各セルのスコアは上記アンカーに基づく初期値(2026-04-28 時点)。
+
+---
+
+## 更新履歴
+
+- **2026-04-28**: 初版作成。D1〜D8 のアンカー定義と 13 FW の初期スコアを記載。
+
