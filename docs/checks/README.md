@@ -37,6 +37,7 @@
 | [`02_learning_difficulty.md`](./02_learning_difficulty.md) | 習得難易度 8 項目(L1〜L8、5=易) |
 | [`03_developer_experience.md`](./03_developer_experience.md) | 開発体験・開発環境 8 項目(D1〜D8) |
 | [`04_language_features.md`](./04_language_features.md) | 言語仕様(事実情報、スコアなし) |
+| [`05_js_framework_for_ionic.md`](./05_js_framework_for_ionic.md) | Ionic+Capacitor PWA 向け JS FW(React/Vue/Angular)5×5=25 項目 |
 
 ---
 
@@ -111,3 +112,4 @@
 ## 更新履歴
 
 - **2026-04-28**: 初版作成
+- **2026-05-11**: `05_js_framework_for_ionic.md`(Ionic 採用後の JS FW サブ評価)を追加
