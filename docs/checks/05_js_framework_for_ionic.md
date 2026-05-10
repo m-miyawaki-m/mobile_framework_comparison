@@ -24,7 +24,7 @@
 |---|---|---|
 | Ionic/Capacitor 統合度 | I1〜I5 | Ionic 公式バインディング・Live Reload・Router・コンポーネント・Capacitor Plugin |
 | PWA 適性 | P1〜P5 | Service Worker・Bundle size・PWA ビルドツール・オフライン・SSR/SSG |
-| 学習・人材 | S1〜S5 | 立ち上げ期間・HTML 親和性・国内人材・日本語資料・AI 補完 |
+| 学習・人材 | S1〜S5 | 立ち上げ期間・HTML/CSS 資産親和性・国内人材・日本語資料・AI 補完 |
 | 開発体験(JS FW 固有)| D1〜D5 | リアクティビティ・状態管理・Form・型安全・Lint |
 | 長期保守・ガバナンス | G1〜G5 | LTS・破壊的変更・Bus Factor・商用サポート・エコ健全性 |
 
@@ -63,7 +63,7 @@
 | 観点 | 最強 | 最弱 |
 |---|---|---|
 | 学習速度 | Vue (S1=5) | React (S1=2) |
-| HTML 親和性 | Vue (S2=5) | React (S2=3) |
+| HTML/CSS 資産親和性 | Vue (S2=5) | React (S2=3) |
 | 国内人材 | React (S3=5) | Angular (S3=3) |
 | リアクティビティ表現 | Vue (D1=5) | React (D1=3) |
 | Form 強度 | Angular (D3=5) | React/Vue (D3=4) |
@@ -205,7 +205,7 @@
 
 | FW | スコア | 重み | 備考 |
 |---|---|---|---|
-| React | 4 | 1.0 | Vite-PWA は使えるが CRA は非推奨化、デファクトが流動的 |
+| React | 4 | 1.0 | Vite-PWA がデファクトに近いが CRA 非推奨化で選択肢が流動気味 |
 | Vue | 5 | 1.0 | `vite-plugin-pwa` が標準、manifest/SW を自動生成 |
 | Angular | 5 | 1.0 | `ng add @angular/pwa` schematic で manifest/SW 自動生成 |
 
@@ -257,7 +257,7 @@
 
 | FW | スコア | 重み | 備考 |
 |---|---|---|---|
-| React | 2 | 1.0 | Hooks/関数型/JSX/状態管理選択の負荷で 3〜5 ヶ月 |
+| React | 2 | 1.0 | Hooks/関数型/JSX/状態管理選択の負荷で 4〜5 ヶ月想定 |
 | Vue | **5** | 1.0 | HTML テンプレ近似で 2〜3 週、最短 |
 | Angular | 3 | 1.0 | DI/RxJS/Module/Reactive Forms で 3〜4 ヶ月 |
 
@@ -357,7 +357,7 @@
 
 | FW | スコア | 重み | 備考 |
 |---|---|---|---|
-| React | 4 | 1.0 | Redux/Zustand/Jotai/Recoil 等、選択肢多すぎ問題 |
+| React | 4 | 1.0 | Redux/Zustand/Jotai 等あり、近年は Zustand が軽量デファクトに収束 |
 | Vue | **5** | 1.0 | Pinia が公式デファクト、軽量・TS 親和性高 |
 | Angular | 4 | 1.0 | NgRx 重厚、Component Store/Signals Store の選択肢あり |
 
@@ -483,7 +483,7 @@
 |---|---|
 | 5 | デファクトライブラリの保守活発、依存更新が継続 |
 | 4 | 主要ライブラリは健全、一部に保守遅れ |
-| 3 | 中程度、保守遅れと健全な ライブラリの混在 |
+| 3 | 中程度、保守遅れと健全なライブラリの混在 |
 | 2 | デファクトが流動的、保守鈍化 |
 | 1 | エコシステム健全性が懸念レベル |
 
@@ -491,7 +491,7 @@
 |---|---|---|---|
 | React | **5** | 1.0 | npm 最大規模、ただし fatigue 問題はあり |
 | Vue | 4 | 1.0 | Vue 3 移行完了、デファクト(Pinia/Nuxt)健全 |
-| Angular | 4 | 1.0 | 公式統合厚、ただしコミュニティ ライブラリは減少気味 |
+| Angular | 4 | 1.0 | 公式統合厚、ただしコミュニティライブラリは減少気味 |
 
 ---
 
@@ -508,7 +508,7 @@
 | 既存 HTML/CSS 資産活用 | **Vue** | S2=5(SFC `<template>` が HTML 直書き)|
 | 大規模 SI 案件・厳格な型運用 | **Angular** | D4=5, I3=5, G1=5 |
 | Next.js 級の SSR/SSG 同時展開 | **React / Vue** | P5=5 |
-| 3 観点(I/P/S/D/G)すべて中庸 | 案件規模・チーム既存スキルで決定 | 総合★は 3 FW とも ★★★★ |
+| 5 観点(I/P/S/D/G)すべて中庸 | 案件規模・チーム既存スキルで決定 | 総合★は 3 FW とも ★★★★ |
 
 ### 重み調整シナリオ例
 
