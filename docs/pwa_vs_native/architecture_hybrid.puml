@@ -368,12 +368,12 @@ title 【⑥ ハイブリッド】 更新・配信フロー(ネイティブ + Li
 
 skinparam defaultFontName "Meiryo"
 
-actor 開発者 as Dev
+actor "開発者" as Dev
 participant "Git / CI/CD" as CI
 participant "Google Play Console /\nMDM / Ionic Appflow" as PLAY
 participant "Web アセット CDN\n(Appflow / 自前)" as CDN
 participant "端末内 Capacitor\nLive Update Plugin" as LU
-actor ユーザ as User
+actor "ユーザ" as User
 
 == ネイティブ変更あり(プラグイン追加等)==
 Dev -> CI: git push (ネイティブコード含む)
@@ -399,7 +399,7 @@ end note
 CDN --> LU: 新アセット取得(起動時 or 定期)
 LU -> User: 次回起動時に反映
 
-note bottom
+note over Dev, User
   Live Update は Ionic Enterprise / Appflow か
   自前実装(@capgo/capacitor-updater 等)で提供
   **Apple/Google ストア規約では「バグ修正・軽微変更」に限定**

@@ -324,13 +324,13 @@ title 【⑥ ネイティブ】 更新・配信フロー
 
 skinparam defaultFontName "Meiryo"
 
-actor 開発者 as Dev
+actor "開発者" as Dev
 participant "Git / CI/CD\n(GitHub Actions\nor Bitrise)" as CI
 participant "署名キーストア" as KS
 participant "Google Play Console" as GP
 participant "MDM\n(SOTI / Intune /\nWorkspace ONE)" as MDM
 participant "Firebase App\nDistribution" as FAD
-actor ユーザ as User
+actor "ユーザ" as User
 
 Dev -> CI: git push
 CI -> CI: gradle assembleRelease\n/ bundleRelease
@@ -363,7 +363,7 @@ else 開発テスト配信
   FAD --> User: メール通知
 end
 
-note bottom
+note over Dev, User
   **ネイティブには OTA 仕組みはない**
   (AOT コンパイル済 DEX のため)
   In-App Update API で強制更新促進のみ可

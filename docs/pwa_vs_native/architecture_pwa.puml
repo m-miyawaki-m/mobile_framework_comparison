@@ -326,12 +326,12 @@ title 【⑥ 純 PWA】 更新・配信フロー
 
 skinparam defaultFontName "Meiryo"
 
-actor 開発者 as Dev
+actor "開発者" as Dev
 participant "Git / CI/CD" as CI
 participant "CDN / HTTPS Server" as Server
 participant "Service Worker\n(端末内)" as SW
 participant "ブラウザ" as Browser
-actor ユーザ as User
+actor "ユーザ" as User
 
 Dev -> CI: git push
 CI -> CI: ビルド(Web bundle)
