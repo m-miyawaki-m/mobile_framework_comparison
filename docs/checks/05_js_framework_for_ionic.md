@@ -129,3 +129,87 @@
 | Angular | 5 | 1.0 | 同上 |
 
 ---
+
+## 3. PWA 適性
+
+### P1. Service Worker 統合
+
+| 点 | 状態 |
+|---|---|
+| 5 | 公式 SW モジュール / schematic、設定が宣言的 |
+| 4 | 公式 plugin(Workbox ラッパ等)で標準対応 |
+| 3 | Workbox 等を手動統合、サンプル豊富 |
+| 2 | 手動統合のみ、サンプル限定的 |
+| 1 | 統合に大きな摩擦 |
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| React | 3 | 1.0 | CRA 内蔵 SW は非推奨化、Vite-PWA / Workbox 手動寄り |
+| Vue | 4 | 1.0 | `vite-plugin-pwa` がデファクト、Workbox 設定が宣言的 |
+| Angular | **5** | 1.0 | `@angular/service-worker` 公式モジュール、`ngsw-config.json` で宣言的 |
+
+### P2. Bundle size
+
+| 点 | 状態 |
+|---|---|
+| 5 | 最小構成で < 30 KB(gzip)、初期ロード軽量 |
+| 4 | 30〜50 KB、許容範囲 |
+| 3 | 50〜100 KB、Code Splitting で改善要 |
+| 2 | 100〜200 KB、最適化が課題 |
+| 1 | 200 KB 超、PWA 用途で重荷 |
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| React | 4 | 1.0 | React + ReactDOM で約 40 KB(gzip)、ライブラリ追加で増加 |
+| Vue | **5** | 1.0 | Vue 3 ランタイム < 30 KB(gzip)、最軽量 |
+| Angular | 3 | 1.0 | Angular CLI 標準で 100+ KB、最適化で 60〜80 KB 程度 |
+
+### P3. PWA ビルドツール
+
+| 点 | 状態 |
+|---|---|
+| 5 | manifest.json / SW 自動生成の公式 schematic / plugin |
+| 4 | 公式またはデファクト plugin が完備 |
+| 3 | 部分的に自動化、手動補強要 |
+| 2 | 主にコミュニティ製 |
+| 1 | 自動化なし、手動構成 |
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| React | 4 | 1.0 | Vite-PWA は使えるが CRA は非推奨化、デファクトが流動的 |
+| Vue | 5 | 1.0 | `vite-plugin-pwa` が標準、manifest/SW を自動生成 |
+| Angular | 5 | 1.0 | `ng add @angular/pwa` schematic で manifest/SW 自動生成 |
+
+### P4. オフライン構築容易度
+
+| 点 | 状態 |
+|---|---|
+| 5 | IndexedDB/Workbox 統合が標準、永続化ライブラリ豊富 |
+| 4 | 主要パターン整備、サンプル多 |
+| 3 | ライブラリは揃うが統合は手動 |
+| 2 | 限定的、独自実装が多い |
+| 1 | オフライン構築に大きな摩擦 |
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| React | 5 | 1.0 | Workbox / Dexie.js / idb は FW 非依存、3 FW 同等 |
+| Vue | 5 | 1.0 | 同上 |
+| Angular | 5 | 1.0 | 同上、@angular/service-worker のキャッシュ戦略も追加で利用可 |
+
+### P5. SSR/SSG 対応
+
+| 点 | 状態 |
+|---|---|
+| 5 | Next.js / Nuxt 級の完全な SSR/SSG フレームワークが利用可 |
+| 4 | 公式 SSR フレームワーク、設定はやや複雑 |
+| 3 | SSR は可能だが Ionic アプリ用途では制約あり |
+| 2 | SSG のみ、限定的 |
+| 1 | SSR/SSG 公式対応なし |
+
+| FW | スコア | 重み | 備考 |
+|---|---|---|---|
+| React | **5** | 1.0 | Next.js が最強、ただし Ionic + Next.js は構成に注意 |
+| Vue | **5** | 1.0 | Nuxt が同等、Ionic + Nuxt も実用例あり |
+| Angular | 4 | 1.0 | Angular Universal は公式だが設定複雑、Ionic との統合は限定的 |
+
+---
