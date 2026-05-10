@@ -494,3 +494,70 @@
 | Angular | 4 | 1.0 | 公式統合厚、ただしコミュニティ ライブラリは減少気味 |
 
 ---
+
+## 7. 候補絞り込みのヒント
+
+汎用観点でのざっくり指針(プロジェクト固有事情は別途重み調整で表現):
+
+| 最優先したい観点 | 推奨 FW | 理由 |
+|---|---|---|
+| 学習速度 / 国内人材容易性 | **Vue** | S1=5, S3=4, S4=5 |
+| 長期保守 / 後方互換 / 大エコシステム | **React** | G1=4, G2=5, G3=5, G5=5 |
+| TS 型安全 / 複雑業務フォーム / Ionic 統合度 | **Angular** | D3=5, D4=5, I1=5, I3=5 |
+| PWA 軽量配信(Bundle size 優先)| **Vue** | P2=5 |
+| 既存 HTML/CSS 資産活用 | **Vue** | S2=5(SFC `<template>` が HTML 直書き)|
+| 大規模 SI 案件・厳格な型運用 | **Angular** | D4=5, I3=5, G1=5 |
+| Next.js 級の SSR/SSG 同時展開 | **React / Vue** | P5=5 |
+| 3 観点(I/P/S/D/G)すべて中庸 | 案件規模・チーム既存スキルで決定 | 総合★は 3 FW とも ★★★★ |
+
+### 重み調整シナリオ例
+
+利用者は本シートの重み列(デフォルト 1.0)を以下のように調整して再計算する:
+
+| シナリオ | 重み調整例 |
+|---|---|
+| 学習速度最優先 | S1 を 3.0、S2 を 2.0 に |
+| エンタープライズ長期保守 | G1/G2/G4 を 3.0 に |
+| PWA 軽量配信 | P1/P2/P3 を 2.5 に |
+| 業務フォーム中心 | D3/D4 を 2.5、I3 を 2.0 に |
+| HT/PWA 混在(社内配信)| P1/P2 + I5 を 2.0 に |
+
+---
+
+## 8. 参照リンク
+
+### 一次データ
+
+| 対象 | 場所 |
+|---|---|
+| Ionic + Capacitor 詳細プロファイル | [`docs/framework_comparison/profile_ionic_capacitor.md`](../framework_comparison/profile_ionic_capacitor.md) |
+| 観点 A〜H・F 節(LTS/Bus Factor/破壊的変更/商用サポート)| [`docs/framework_comparison/selection_criteria.md`](../framework_comparison/selection_criteria.md) |
+| 13 FW 一覧と 3 軸サマリ | [`docs/checks/00_overview.md`](./00_overview.md) |
+| docs/checks/ スコアリング規約 | [`docs/checks/README.md`](./README.md) |
+
+### 公式
+
+| 対象 | URL |
+|---|---|
+| Ionic Framework | https://ionicframework.com/ |
+| Capacitor | https://capacitorjs.com/ |
+| React | https://react.dev/ |
+| Vue | https://vuejs.org/ |
+| Angular | https://angular.dev/ |
+| `@ionic/react` | https://ionicframework.com/docs/react |
+| `@ionic/vue` | https://ionicframework.com/docs/vue |
+| `@ionic/angular` | https://ionicframework.com/docs/angular |
+
+### PWA / ビルドツール
+
+| 対象 | URL |
+|---|---|
+| vite-plugin-pwa | https://vite-pwa-org.netlify.app/ |
+| @angular/service-worker | https://angular.dev/ecosystem/service-workers |
+| Workbox | https://developer.chrome.com/docs/workbox |
+
+---
+
+## 更新履歴
+
+- **2026-05-11**: 初版作成(設計仕様 `2026-05-11-js-framework-for-ionic-scorecard-design.md` に基づく)
