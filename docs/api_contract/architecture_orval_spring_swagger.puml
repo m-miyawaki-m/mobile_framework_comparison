@@ -1,0 +1,442 @@
+' =========================================================
+' Orval + Spring Boot + Swagger (OpenAPI) アーキテクチャ
+' =========================================================
+' 本件コンテキスト:
+'   Frontend = Ionic + Capacitor + Vue / React / Angular
+'   Backend  = Spring Boot + Spring Data JPA + Springdoc OpenAPI
+'   Contract = OpenAPI 3.x spec (openapi.json / yaml)
+'   Codegen  = Orval (TS 型 + fetcher + TanStack Query Hook + MSW mock)
+' 参照:
+'   Orval                 https://orval.dev/
+'   Springdoc OpenAPI     https://springdoc.org/
+'   OpenAPI 3.x 仕様      https://spec.openapis.org/oas/latest.html
+' =========================================================
+' 収録ダイアグラム:
+'   1. layer_structure        フルスタックレイヤ構造
+'   2. codegen_flow           ビルド時コード生成フロー
+'   3. runtime_request_flow   ランタイムリクエストフロー
+'   4. cicd_pipeline          CI/CD パイプライン
+'   5. contract_enforcement   契約強制と Mock 戦略
+' =========================================================
+
+@startuml 1_orval_spring_layer_structure
+
+title 【①】 Orval + Spring Boot + Swagger\nフルスタックレイヤ構造
+
+skinparam defaultFontName "Meiryo"
+skinparam shadowing false
+skinparam package {
+  BackgroundColor<<fe_ui>> #BBDEFB
+  BackgroundColor<<fe_domain>> #C5CAE9
+  BackgroundColor<<fe_data>> #CFD8DC
+  BackgroundColor<<fe_gen>> #E1BEE7
+  BackgroundColor<<bridge>> #FFCC80
+  BackgroundColor<<contract>> #FFE082
+  BackgroundColor<<be_ctrl>> #C8E6C9
+  BackgroundColor<<be_svc>> #DCEDC8
+  BackgroundColor<<be_repo>> #E6EE9C
+  BackgroundColor<<external>> #ECEFF1
+  BorderColor #424242
+}
+skinparam component {
+  BackgroundColor White
+  BorderColor #666
+}
+skinparam database {
+  BackgroundColor #FFFDE7
+  BorderColor #666
+}
+skinparam node {
+  BackgroundColor #FFF8E1
+  BorderColor #F57F17
+}
+
+package "Frontend (Ionic + Capacitor + Vue / React / Angular)" as FE {
+
+  package "UI Layer (TS、WebView/ブラウザ内)" as FE_UI <<fe_ui>> {
+    component "Ionic UI コンポーネント\n+ Vue SFC / React JSX / Angular Template" as FE_UI_COMP
+    component "State Holders\n(Pinia / Zustand / RxJS)" as FE_UI_STATE
+  }
+
+  package "Application Layer (TS)" as FE_APP <<fe_domain>> {
+    component "Application Code\n(画面遷移ロジック・バリデーション・\n フォーマット変換 等)" as FE_APP_CODE
+  }
+
+  package "Data Layer (TS)" as FE_DATA <<fe_data>> {
+    component "Repository Wrapper (任意)\n例: UserRepository\n(複数 API + IndexedDB 統合)" as FE_DATA_REPO
+  }
+
+  package "Orval 生成コード (TS、ビルド成果物)" as FE_GEN <<fe_gen>> {
+    component "型定義\nuser.ts / order.ts ...\n(OpenAPI schema → TS interface)" as FE_GEN_TYPES
+    component "HTTP fetcher\ngetUsers() / postOrder()\n(axios / fetch ラッパ)" as FE_GEN_FETCH
+    component "TanStack Query / SWR Hook\nuseGetUsers() / useMutationPostOrder()" as FE_GEN_HOOK
+    component "MSW Mock Handler\n(開発・テスト用)" as FE_GEN_MOCK
+    component "Zod Schema (任意)\n(ランタイム検証)" as FE_GEN_ZOD
+  }
+
+  component "Capacitor Bridge\n(APK 配信時のみ存在)" as FE_BRIDGE <<bridge>>
+}
+
+node "OpenAPI Specification\n(openapi.json / openapi.yaml)\n★ 契約の単一の信頼点(SSOT)" as CONTRACT <<contract>>
+
+package "Backend (Spring Boot)" as BE {
+
+  package "Web Layer" as BE_WEB <<be_ctrl>> {
+    component "DispatcherServlet" as BE_DISP
+    component "@RestController\nUserController / OrderController\n+ @Operation / @Schema 注釈" as BE_CTRL
+    component "Bean Validation\n(@Valid / @NotNull / @Pattern)" as BE_VALID
+    component "ExceptionHandler\n(@ControllerAdvice)" as BE_ERR
+  }
+
+  package "Service Layer" as BE_SVC <<be_svc>> {
+    component "UserService / OrderService\n(@Service、ビジネスロジック)" as BE_SVC_CLASS
+    component "Domain Entity\n(POJO + JPA @Entity)" as BE_ENTITY
+  }
+
+  package "Repository Layer" as BE_REPO <<be_repo>> {
+    component "JpaRepository\n(Spring Data 自動実装)" as BE_REPO_CLASS
+  }
+
+  component "Springdoc OpenAPI\n(spring-doc-openapi-starter-webmvc-ui)\nランタイムで /v3/api-docs を公開" as BE_SPRINGDOC <<be_ctrl>>
+  component "Swagger UI\n/swagger-ui.html\n(開発時の API 確認 UI)" as BE_SWAGGER_UI <<be_ctrl>>
+}
+
+package "External" as EXT <<external>> {
+  database "RDB (PostgreSQL /\nMySQL / Oracle 等)" as DB
+  cloud "ID Provider (Keycloak /\nAzure AD / 自社 SSO)" as IDP
+  cloud "外部 API\n(必要に応じて)" as EXT_API
+}
+
+' Frontend internal flow
+FE_UI_COMP -down-> FE_UI_STATE
+FE_UI_STATE -down-> FE_APP_CODE
+FE_APP_CODE -down-> FE_DATA_REPO
+FE_DATA_REPO -down-> FE_GEN_HOOK
+FE_GEN_HOOK -down-> FE_GEN_FETCH
+FE_GEN_FETCH -down-> FE_GEN_TYPES : 型で保護
+FE_GEN_HOOK ..> FE_GEN_MOCK : テスト時
+FE_GEN_FETCH ..> FE_GEN_ZOD : ランタイム検証(任意)
+
+' Frontend to Bridge (only in APK mode)
+FE_GEN_FETCH ..> FE_BRIDGE : (Capacitor APK 時のみ、\nfetch は WebView 標準を使うため\n実質的に Bridge 経由ではない)
+
+' Contract is the boundary
+FE_GEN_TYPES <.up. CONTRACT : Orval 生成元
+FE_GEN_FETCH <.up. CONTRACT : Orval 生成元
+FE_GEN_HOOK <.up. CONTRACT : Orval 生成元
+FE_GEN_MOCK <.up. CONTRACT : Orval 生成元
+
+' Spring generates the spec
+BE_SPRINGDOC -up-> CONTRACT : 自動生成(/v3/api-docs)
+BE_CTRL .right.> BE_SPRINGDOC : @Operation 注釈を反映
+BE_SWAGGER_UI -right-> BE_SPRINGDOC : 同じ spec をブラウザ表示
+
+' Backend internal flow
+BE_DISP -down-> BE_CTRL
+BE_CTRL -down-> BE_VALID : 入力検証
+BE_CTRL -down-> BE_SVC_CLASS
+BE_SVC_CLASS -down-> BE_ENTITY
+BE_SVC_CLASS -down-> BE_REPO_CLASS
+BE_REPO_CLASS -down-> DB
+BE_CTRL .down.> BE_ERR : 例外時
+BE_SVC_CLASS ..> IDP : 認可
+BE_SVC_CLASS ..> EXT_API : 必要に応じて
+
+' Request flow (FE → BE)
+FE_GEN_FETCH -[#0066CC,thickness=2]down-> BE_DISP : HTTP(S)\nJSON
+
+note right of CONTRACT
+  **OpenAPI Spec (openapi.json)** はバックエンド側で
+  自動生成され、フロントエンドの **Orval が読み取って**
+  TS コードを再生成する。両側のずれが契約違反として検知される
+end note
+
+note right of FE_GEN
+  **Orval 生成コードはコミットする/しないをチーム判断**
+  - コミット派: ビルド再現性・PR 差分でズレ検知容易
+  - 非コミット派: prebuild で再生成、リポジトリ軽量
+  どちらでも可、本リポジトリでは方針未定
+end note
+
+note right of BE_SPRINGDOC
+  **Springdoc** が Spring の Bean / Controller を反射的に走査して
+  OpenAPI 3.x spec を JSON / YAML で公開する
+  Spring Boot 3.x + springdoc-openapi-starter-webmvc-ui が標準
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 2_orval_codegen_flow
+
+title 【②】 Orval ビルド時コード生成フロー\n(Backend 仕様 → Frontend TypeScript)
+
+skinparam defaultFontName "Meiryo"
+skinparam node {
+  BackgroundColor #FFF8E1
+  BorderColor #F57F17
+}
+
+start
+
+partition "Backend (Spring Boot) 側" #C8E6C9 {
+  :@RestController + @Operation + @Schema 注釈;
+  :Bean Validation 注釈 (@NotNull / @Pattern);
+  :Spring Boot 起動 / Springdoc 起動;
+  :springdoc-openapi が Bean を走査;
+  :OpenAPI 3.x spec を組立;
+  :GET /v3/api-docs で JSON 公開\n(または静的ファイル出力);
+}
+
+#orange:**openapi.json**\n(spec ファイル);
+
+partition "Frontend 側" #BBDEFB {
+  :orval.config.ts 読み込み;
+  note right
+    例:
+    {
+      petstore: {
+        input: 'http://localhost:8080/v3/api-docs',
+        output: {
+          target: 'src/api/generated/endpoints.ts',
+          schemas: 'src/api/generated/model',
+          client: 'react-query',
+          mock: true
+        }
+      }
+    }
+  end note
+
+  :Orval が spec を取得 / 読込;
+  :TypeScript AST を構築;
+
+  fork
+    :TS 型定義生成\nUser, Order, ...;
+  fork again
+    :HTTP fetcher 生成\nfunction getUsers(): Promise<User[]>;
+  fork again
+    :TanStack Query Hook 生成\nfunction useGetUsers();
+  fork again
+    :MSW Mock Handler 生成\ngetUserMock();
+  fork again
+    :Zod Schema 生成 (任意)\nUserSchema;
+  end fork
+
+  :src/api/generated/*.ts に書き出し;
+  :TypeScript コンパイラ (tsc) で型チェック;
+  :ビルド (Vite / Webpack / Angular CLI);
+}
+
+#lightgreen:**Web アセット (dist/)**\nPWA 配信 or Capacitor sync;
+
+stop
+
+note right
+  **重要**: openapi.json はビルド時に **取得タイミング** が問われる
+  - 開発時: Spring Boot 起動済の dev サーバから fetch
+  - CI 時: バックエンドリポジトリの artifact / git tag / 共有 S3 から取得
+  - オフライン: 静的 openapi.json をリポジトリにコミット
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 3_orval_runtime_request_flow
+
+title 【③】 ランタイム リクエストフロー\n(画面操作 → Spring API → DB → 画面更新)
+
+skinparam defaultFontName "Meiryo"
+
+actor User
+participant "Component\n(Vue SFC /\nReact JSX)" as COMP
+participant "useGetUsers()\n(orval 生成 Hook)" as HOOK
+participant "TanStack Query\nCache" as TQ
+participant "getUsers()\n(orval 生成 fetcher)" as FETCH
+participant "WebView / Browser\nHTTP Stack" as HTTP
+participant "DispatcherServlet" as DS
+participant "@RestController\nUserController" as CTRL
+participant "@Valid Bean\nValidation" as VAL
+participant "UserService" as SVC
+participant "JpaRepository" as REPO
+database "RDB" as DB
+
+User -> COMP : 画面表示
+COMP -> HOOK : ライフサイクル時に呼出
+HOOK -> TQ : useQuery(["users"]) で cache 参照
+alt cache hit
+  TQ --> HOOK : cached data
+  HOOK --> COMP : render
+else cache miss / stale
+  HOOK -> FETCH : getUsers()
+  FETCH -> HTTP : axios.get('/api/users')
+  HTTP -> DS : HTTP GET\nHeader: Auth, Accept: application/json
+  DS -> CTRL : @GetMapping("/users")
+  CTRL -> VAL : (POST 時の @Valid)\n本フローは GET なので省略
+  CTRL -> SVC : userService.findAll()
+  SVC -> REPO : userRepository.findAll()
+  REPO -> DB : SELECT * FROM users
+  DB --> REPO : ResultSet
+  REPO --> SVC : List<UserEntity>
+  SVC -> SVC : Entity → DTO 変換
+  SVC --> CTRL : List<UserDto>
+  CTRL --> DS : ResponseEntity<List<UserDto>>\n(Spring が JSON シリアライズ)
+  DS --> HTTP : HTTP 200 + JSON
+  HTTP --> FETCH : Response<User[]>
+  FETCH -> FETCH : (任意) Zod で runtime 検証
+  FETCH --> HOOK : User[] (TS 型保証済)
+  HOOK -> TQ : cache に保存
+  HOOK --> COMP : render with data
+end
+COMP --> User : 一覧表示
+
+note over FETCH, HTTP
+  **PWA 配信時**: WebView/ブラウザの fetch を使う
+  **Capacitor APK 配信時**: 既定では同じく WebView fetch
+  プラットフォーム固有ヘッダや CORS 回避が必要なら
+  @capacitor/http プラグインに切替可
+end note
+
+note over CTRL
+  **@Operation / @Schema** の注釈が
+  Springdoc により OpenAPI spec に反映される
+  注釈の更新 = spec の更新 = orval 再生成のトリガ
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 4_orval_cicd_pipeline
+
+title 【④】 CI/CD パイプライン\n(契約駆動開発: バックエンド spec → フロントエンド codegen)
+
+skinparam defaultFontName "Meiryo"
+
+actor "BE 開発者" as BeDev
+actor "FE 開発者" as FeDev
+participant "Backend Git" as BeGit
+participant "Backend CI\n(GitHub Actions /\nJenkins)" as BeCI
+participant "openapi.json\nArtifact Store\n(S3 / Nexus / Git Tag)" as Artifact
+participant "Frontend Git" as FeGit
+participant "Frontend CI" as FeCI
+participant "Renovate / Bot\n(任意)" as Bot
+participant "Frontend Deploy\n(PWA: S3+CDN /\nAPK: Play+MDM)" as Deploy
+
+== Backend 変更フロー ==
+BeDev -> BeGit : PR (@Operation 修正等)
+BeGit -> BeCI : trigger
+BeCI -> BeCI : mvn test
+BeCI -> BeCI : Spring Boot 起動 → openapi.json 出力
+BeCI -> BeCI : 旧 spec と diff\n(breaking change 検知)
+alt breaking change
+  BeCI -> BeDev : PR ブロック / 警告
+else 後方互換
+  BeCI -> Artifact : openapi.json を publish\n(version tag 付き)
+  BeCI -> BeGit : merge 許可
+end
+
+== Frontend codegen フロー ==
+alt 自動同期 (Renovate / Bot)
+  Bot -> Artifact : 新 spec の存在を検出
+  Bot -> FeGit : PR 自動作成\n(openapi.json 差し替え + orval generate)
+  FeGit -> FeCI : trigger
+else 手動同期
+  FeDev -> Artifact : 最新 spec を取得
+  FeDev -> FeDev : orval generate
+  FeDev -> FeGit : PR
+  FeGit -> FeCI : trigger
+end
+
+== Frontend ビルド・デプロイ ==
+FeCI -> FeCI : orval generate (spec → ts)
+FeCI -> FeCI : tsc 型チェック
+FeCI -> FeCI : テスト(unit + MSW モック)
+FeCI -> FeCI : vite build / ng build
+alt PWA 配信
+  FeCI -> Deploy : S3 + CDN
+else Capacitor APK 配信
+  FeCI -> FeCI : npx cap sync android
+  FeCI -> FeCI : gradle build (署名)
+  FeCI -> Deploy : Play / MDM
+end
+
+note over BeCI, Artifact
+  **契約破壊チェック (Breaking Change)**
+  - 既存 endpoint 削除
+  - 必須プロパティ追加
+  - 型の互換性ない変更
+  → CI で diff を取り、検出時は PR をブロック
+  ツール例: openapi-diff, oasdiff
+end note
+
+note over Bot, FeCI
+  **spec の頻繁な更新** を運用に乗せる仕掛け
+  - 毎日 / 毎時 のスケジュールで bot が spec を確認
+  - 変更検出 → 自動 PR
+  - レビュー時にコード差分で UI 影響を把握
+end note
+
+@enduml
+
+' =========================================================
+
+@startuml 5_orval_contract_enforcement
+
+title 【⑤】 契約強制と Mock 戦略\n(型安全の境界と検証の階層)
+
+skinparam defaultFontName "Meiryo"
+
+rectangle "OpenAPI Spec\n(openapi.json)\n★ Single Source of Truth" as SPEC #FFE082
+
+rectangle "Backend 強制 (Java)" as BE_ENFORCE #C8E6C9 {
+  card "**Bean Validation**\n@Valid / @NotNull / @Pattern\n@Schema(required=true, pattern='^...$')\nリクエスト時に Spring が検証" as BV
+  card "**Jackson シリアライズ**\nDTO → JSON\nSchema 定義に従う" as JKS
+  card "**MockMvc / Rest Assured**\nContract Test\nspec と Controller の整合を CI で検証" as MMVC
+  card "**springdoc-openapi-tests** (任意)\nspec ⟷ Controller のドリフト検出" as DOC_TEST
+}
+
+rectangle "Frontend 強制 (TypeScript)" as FE_ENFORCE #BBDEFB {
+  card "**コンパイル時型安全**\norval 生成の型 = OpenAPI Schema\ntsc strict で全使用箇所を保証" as TSC
+  card "**Zod Runtime Validation** (任意)\norval --client zod でフロント側でも\nレスポンス検証\n→ サーバ実装ミスを検知" as ZOD
+  card "**MSW Mock**\norval 生成 mock を MSW で配信\nBackend 未実装でも FE 単独開発可" as MSW
+  card "**Storybook + Mock**\nコンポーネント単位で\nモック API を使って UI 確認" as SB
+}
+
+rectangle "テスト戦略" as TEST_STRATEGY #FFF8E1 {
+  card "**Unit Test (FE)**\nVitest / Jest + MSW\norval mock で hook 動作確認" as UT_FE
+  card "**Unit Test (BE)**\nJUnit + MockMvc\n@WebMvcTest" as UT_BE
+  card "**Integration Test**\nTestcontainers (BE)\n+ MSW (FE)" as IT
+  card "**Contract Test (CI)**\nopenapi-diff で前回 spec と比較\nBreaking change を PR ブロック" as CT
+  card "**E2E Test** (任意)\nPlaywright + 実 Spring 起動\n本物の DB(Testcontainers)" as E2E
+}
+
+SPEC -down-> BE_ENFORCE : 注釈で\n反映
+SPEC -down-> FE_ENFORCE : codegen で\n反映
+SPEC -down-> TEST_STRATEGY : 契約源
+
+BE_ENFORCE -[#666,dashed]right- FE_ENFORCE : spec を介して間接的に連動
+BE_ENFORCE -down-> TEST_STRATEGY
+FE_ENFORCE -down-> TEST_STRATEGY
+
+note right of SPEC
+  **spec が唯一の信頼点 (SSOT)**
+  両側の実装が spec から外れたら
+  どちらかが契約違反 = テスト失敗
+end note
+
+note bottom of MSW
+  **Backend が未実装でも FE が止まらない**
+  orval が mock も生成するため、
+  spec が決まれば FE 開発即着手可
+end note
+
+note bottom of CT
+  **契約破壊の検出ライン**
+  - 毎 PR で旧 spec と比較
+  - breaking change は明示承認を要求
+  - クライアント側の追従が必要な変更を可視化
+end note
+
+@enduml
