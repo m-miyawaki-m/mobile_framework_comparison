@@ -7,6 +7,13 @@
 - 凡例(対応度): ◎=完全対応 / ○=標準的に対応 / △=制約あり・要自作 / ×=原理的に不可
 - 凡例(選定影響度): **決定的**=1 項目で選定が固まりうる / **強い**=複数項目で大差 / 中=チューニングで緩和可 / 小=設計次第
 
+> **読み方のガイド**: 本書は詳細レファレンスです。**まず素早く判断したい場合は以下を参照**:
+> - 概観 + 選定ガイド(5 分判断): [`pwa_vs_native_overview.md`](./pwa_vs_native_overview.md)
+> - できる/できない 早見表: [`pwa_vs_native_capabilities.md`](./pwa_vs_native_capabilities.md)
+> - レイヤ境界の原理(なぜ PWA で SDK 不可か): [`pwa_native_layer_boundary.md`](./pwa_native_layer_boundary.md)
+>
+> 本書(criteria.md)は **詳細根拠や全項目を確認したい場合の参照資料** として位置付ける。
+
 ---
 
 ## 0. 結論サマリ
